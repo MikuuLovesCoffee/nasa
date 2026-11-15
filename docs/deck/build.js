@@ -263,10 +263,6 @@ const nowcast = best("base + nowcast");
   n++;
 }
 
-pres.writeFile({ fileName: OUT }).then(async () => {
-  try {
-    const { applyTheme } = require("C:/Users/Zephyrus/.claude/skills/synced/3b9a0c09-6b9f-466c-a355-191764cef67d_0328f474-51e2-41bb-901b-de46dfe92703/pptx/scripts/apply_theme.js");
-    await applyTheme(OUT, THEME);
-  } catch (e) { console.log("theme not applied:", e.message); }
+pres.writeFile({ fileName: OUT }).then(() => {
   console.log("wrote", OUT, n, "slides");
 });
