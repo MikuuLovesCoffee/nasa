@@ -2,6 +2,7 @@
   "name": "ember-atlas",
   "private": true,
   "version": "1.0.0",
+  "description": "Ember Atlas: one fire record from NASA MODIS + VIIRS. Team Ainexa, NASA Space Apps. SI-assisted: code written with help from Claude (Anthropic), reviewed by the team.",
   "type": "module",
   "scripts": {
     "dev": "vite",

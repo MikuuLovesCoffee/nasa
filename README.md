@@ -1,76 +1,89 @@
-# Ember Atlas
+# 🔥 Ember Atlas
 
-One consistent fire record from NASA's MODIS and VIIRS satellites (2000–2025), live fires from four satellites, and an AI fire-risk forecast, all on a 3D globe.
+**One fire record for the whole planet.** Ember Atlas unifies 25 years of NASA's MODIS and VIIRS active-fire data into a single, consistent record. On top of that record it builds a burning-activity calendar for any area, live fire maps and an AI fire-risk forecast, all on a 3D globe in the browser.
 
-**Live:** https://nasa.mikuuloves.coffee
+**▶ Live site:** https://nasa.mikuuloves.coffee
+**▶ 30-second demo:** [`video/ember_atlas_30s.mp4`](video/ember_atlas_30s.mp4)
 
-## The problem
+Team **Ainexa** (Uzbekistan) · NASA Space Apps Challenge · challenge: *MODIS + VIIRS hot spots*
 
-MODIS (1 km pixels, since 2000) and VIIRS (375 m, since 2012) both detect active fires, but their numbers can't be compared directly. VIIRS sees smaller fires and reports about 4× more detections. If you stitch the two records together as they are, fire appears to jump in 2012. A second artefact sits in 2000–2002, when only Terra was flying: Aqua's afternoon pass roughly triples MODIS detections once it starts.
+---
 
-## What we built
+## The problem: two satellites, two rulers
 
-| Mode | What it shows |
+| | MODIS | VIIRS |
+|---|---|---|
+| Flying since | 2000 | 2012 |
+| Pixel size | 1 km | 375 m |
+| Fires detected | fewer | about **4×** more (it sees smaller fires) |
+
+Put the two records together as they are, and global fire seems to **quadruple overnight in 2012**. It never did: the instrument changed. Until the records are on one scale, nobody can honestly ask *"when does my area burn, and is this year unusual?"*
+
+## The solution: one record, one scale
+
+1. **392.6 million** detections (Nov 2000 – Dec 2025) from the NASA FIRMS archives. Vegetation fires only (no volcanoes, gas flares or factories), counted on a 0.5° grid every month.
+2. For every **5° region and season**, we learn how many VIIRS detections one MODIS detection stands for, using the years both satellites flew. The years before VIIRS are then expressed in VIIRS-equivalent units.
+3. **Honest test:** we fit on 2012–2018 only, then predicted VIIRS for 2019–2025 from MODIS alone.
+
+| Held-out test, 2019–2025 | Raw MODIS | Ember Atlas |
+|---|---|---|
+| Monthly global error vs real VIIRS | 76 % | **7.4 %** |
+| Regional fit, R² (log) | 0.50 | **0.81** |
+
+## What you can do with it
+
+| Mode | What it gives you |
 |---|---|
-| **History** | 392.6M detections on a 0.5° grid, monthly from Nov 2000 to Dec 2025, in one VIIRS-equivalent unit. Scrub or play through time. Switch to *Raw* to see each sensor uncalibrated. |
-| **Fire Calendar** | Pick a country, a province or draw a box (or use *Fire calendar for …* in a place card). A 25-year × 12-month burning-activity calendar for that area: the **critical period** (fewest months holding 80% of a normal year's fire, plus a "get ready by" month), **unusual months** (≥2 robust spreads from that month's median, log scale), Theil–Sen trend with a Mann–Kendall test, season-timing shift, the AI outlook averaged over the area, CSV download and a shareable link (`?mode=calendar&area=country:Uzbekistan`). Computed in the browser from `history.bin` (`site/src/calendar.js`). |
-| **Live** | NASA FIRMS near-real-time feeds from VIIRS (NOAA-21, NOAA-20) and MODIS (Terra, Aqua); Suomi NPP stopped delivering data on 2 Nov 2026 and is no longer used. The same fire seen by several satellites is merged and counted once. Two views: **All heat** (default) shows every detection; **Fires only** takes gas flares, volcanoes and industrial heat out of the count and draws them in their own colours (cyan, purple, grey). |
-| **AI Forecast** | The chance of significant fire (≥30 VIIRS-eq. detections) per 1° cell for this month and next, with an explanation for each cell: how often it burned before, the current weather, the past years with the most similar weather, and what pushed the prediction. **Area forecast:** pick a country, province / republic or draw a box (same picker as the Fire Calendar) to see the AI's chance vs the "same as usual" baseline, a ranking of the country's provinces, the hottest squares, CSV and a shareable link (`?mode=forecast&area=country:Uzbekistan`). |
+| **History** | 25 years of fire on one scale. Play through time, or switch to *Raw* to see the 2012 jump disappear. |
+| **Fire Calendar** | Pick a country, province or republic, or draw a box. You get a year × month **burning-activity calendar** with the **critical period**, a "get ready by" month, **unusual months** compared with that month's own normal, the trend, CSV download and a shareable link. |
+| **Live** | Near-real-time fires from four satellites (VIIRS NOAA-20/21, MODIS Terra/Aqua). The same fire is **counted once**, and gas flares, volcanoes and industrial heat can be filtered out. Click a fire for the satellite picture of it. |
+| **AI Forecast** | Chance of significant fire per 1° square for this month and next, **with an explanation**. Pick any area to see whether it looks **higher or lower than usual** and which provinces are most at risk. |
 
-Click any place on the globe to see its exact coordinates and province (Uzbek viloyat names for Uzbekistan), plus 25 years of fire history, the fire season and the AI outlook. Those numbers are for the 1° grid square (about 111 × 85 km) outlined on the globe, and the card lists which provinces that square covers.
+Example: **Uzbekistan** burns mostly **March–October** (90 % of a normal year's fire), so responders should be ready by **February**. July 2003 had three times the usual fire.
 
-## Method
+## The AI, in one table
 
-1. **Ingest** (`pipeline/ingest.py`): FIRMS yearly archives are normalized into one schema. MODIS 0–100 confidence is mapped to the VIIRS low/nominal/high classes.
-2. **Harmonize** (`pipeline/harmonize.py`):
-   - Keep vegetation fires only (no volcanoes, gas flares or industrial heat) and drop low-confidence detections.
-   - Count detections per 0.5° cell per month.
-   - Learn a VIIRS ÷ MODIS ratio for each 5° block and season from the 2012–2025 overlap, shrunk toward the global ratio where data is sparse.
-   - Apply the same idea to Terra-only months, using a (Terra+Aqua) ÷ Terra factor learned from 2003–2011.
-   - **Validation:** fit on 2012–2018, then predict VIIRS from MODIS for 2019–2025. Monthly global error is **7.4%** with the calibration vs **76%** with raw MODIS. Regional R² (log) is 0.81 vs 0.50.
-3. **Weather** (`pipeline/weather.py`): NASA POWER monthly values for 2000–2025 plus daily values for 2026. Variables: max temperature, rainfall, humidity, wind and root-zone soil moisture, aggregated to 1° cells.
-4. **AI** (`pipeline/train.py`, runs locally): XGBoost on about 3.1M cell-months (12,468 fire-prone 1° cells). Each feature uses only information available before the month being predicted:
-   - the place's fire history for that calendar month, from earlier years only
-   - last month's weather anomalies
-   - an **analog score**: how often fire followed when this place's weather looked like this before
+XGBoost trained **locally** on 3.1 million cell-months: fire history, NASA POWER weather, wind, vegetation greenness (MODIS NDVI), land cover and forest loss. Tested on **2023–2025, years it never saw**:
 
-   Results on 2023–2025, which the model never saw:
+| Test set | AI | "Same as usual" baseline |
+|---|---|---|
+| All cases · ROC-AUC | 0.954 | 0.936 |
+| Unusual fires · ROC-AUC | 0.885 | 0.813 |
+| Unusual fires · average precision | **0.314** | 0.181 → **+73 %** |
 
-   | Cases | AI | "Same as usual" baseline |
-   |---|---|---|
-   | All · ROC-AUC | 0.950 | 0.936 |
-   | Unusual fires (places/months that burn in <30% of years) · ROC-AUC | 0.869 | 0.813 |
-   | Unusual fires · average precision | **0.274** | 0.181 (about 51% higher for the AI) |
+*Unusual fires* = places and months that burn in fewer than 30 % of years: the cases where early warning matters most.
 
-5. **Export** (`pipeline/export.py`): compact static files for the site. The history binary is delta-encoded (about 15 MB gzipped), with per-cell detail split into tiles.
-6. **Non-fire heat mask for Live** (`pipeline/static_mask.py`): NASA's live feeds don't say what a hot spot is, so every ~1 km cell of known non-fire heat is listed, with its category:
-   - from the 2000–2025 archive: spots NASA labelled volcano / static source / offshore at least 3 times, and spots hot 10+ days a year in 3+ years
-   - 26,818 gas-flare sites (VIIRS Nightfire 2012–2025)
-   - the 231 volcanoes active since 2000 (Smithsonian)
-   - OpenStreetMap industry (coded; not yet fetched because the servers were overloaded)
-
-   163,510 cells in total. Output: `static_mask.bin` + `static_mask_kind.bin`.
-7. **Province borders** (`pipeline/provinces.sh`): Natural Earth admin-1, simplified to `admin1.json` (530 KB gzipped). The province lookup runs in the browser; no outside geocoding service is used.
-
-## Run it
+## Run it yourself
 
 ```bash
+# website (uses the data files already in site/public/data)
+cd site
+npm install
+npm run dev          # → http://localhost:5173
+
+# rebuild the data and the AI model (Python 3.10+, several hours, ~7 GB of downloads)
 pip install duckdb pyarrow pandas numpy xgboost scikit-learn requests
-cd site && npm install && cd ..
-./run_pipeline.sh           # or run the steps inside it one by one
-cd site && npm run dev      # http://localhost:5173 (the /firms proxy is in vite.config.js)
+./run_pipeline.sh
 ```
 
-The server only hosts static files plus a cached nginx proxy to FIRMS (`deploy/nginx-nasa.conf`). No AI runs on the server.
+The server only hosts static files plus a small cached proxy for the NASA FIRMS live feeds. No AI runs on the server.
+
+## Project layout
+
+```
+site/        the website (Vite + three.js); data files in site/public/data
+pipeline/    Python: ingest → harmonize → weather → wind/forest/vegetation → train → export
+video/       30-second demo video and the scripts that made it
+run_pipeline.sh, forecast.sh   full rebuild / monthly forecast refresh
+```
 
 ## Data
 
-- NASA FIRMS: MODIS Collection 6.1 and VIIRS S-NPP Collection 2 standard-processing archives, plus the near-real-time feeds.
-- NASA POWER: MERRA-2 based meteorology.
-- Gas flares: VIIRS Nightfire upstream flare sites, MYC25Q4, Earth Observation Group, Colorado School of Mines ([doi:10.5281/zenodo.23091822](https://doi.org/10.5281/zenodo.23091822), CC BY-NC 4.0).
-- Volcanoes: Smithsonian Global Volcanism Program, Volcanoes of the World.
-- Province borders: Natural Earth 1:10m admin-1 (public domain).
+**NASA:** FIRMS MODIS C6.1 and VIIRS 375 m archives and near-real-time feeds · NASA POWER (MERRA-2) weather · MODIS NDVI and satellite imagery via NASA GIBS.
+**Partners and others:** Hansen Global Forest Change (UMD/Google/USGS/NASA, CC BY 4.0) · ESA WorldCover 2021 (CC BY 4.0) · Copernicus Sentinel-2 via Microsoft Planetary Computer · EUMETSAT Meteosat imagery · VIIRS Nightfire gas flares, Earth Observation Group, Colorado School of Mines (CC BY-NC 4.0) · Smithsonian Global Volcanism Program · Natural Earth borders.
 
-The full story of how this was built, with every command, number and decision, is in `EMBER_ATLAS_BOOK.md`.
+**Known gap:** the FIRMS standard archives end in December 2025, so January–October 2026 is not in History yet. A free FIRMS API key would fill it.
 
-Known gap: the standard archives end in December 2025. Jan–Oct 2026 history isn't in the History view yet. A free FIRMS MAP_KEY would let us fill it from the FIRMS area API.
+## Use of AI tools (SI)
+
+We used **Claude (Anthropic)** as a coding and writing assistant: for the code in `site/` and `pipeline/`, the data-processing scripts, the documentation and the demo video. The video carries a visible "SI-assisted" watermark. Its narration is a **synthetic text-to-speech voice**, noted in the video's metadata. The team chose the approach, checked the results and ran every step. The data is real NASA and partner data, not generated. No NASA logos or branding are used.
