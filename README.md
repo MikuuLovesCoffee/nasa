@@ -4,8 +4,10 @@
 
 **▶ Live site:** https://nasa.mikuuloves.coffee
 **▶ 30-second demo:** [`video/ember_atlas_30s.mp4`](video/ember_atlas_30s.mp4)
+**▶ Slides (7):** [`slides/ember_atlas_slides.pdf`](slides/ember_atlas_slides.pdf) · [PowerPoint](slides/ember_atlas_slides.pptx)
 
-Team **Ainexa** (Uzbekistan) · NASA Space Apps Challenge · challenge: *MODIS + VIIRS hot spots*
+Team **Ainexa** (Uzbekistan): Mikuu · Infectuz · BNull · Chimera · CyberScorpion
+NASA Space Apps Challenge · challenge: *MODIS + VIIRS hot spots*
 
 ---
 
@@ -73,7 +75,8 @@ The server only hosts static files plus a small cached proxy for the NASA FIRMS 
 ```
 site/        the website (Vite + three.js); data files in site/public/data
 pipeline/    Python: ingest → harmonize → weather → wind/forest/vegetation → train → export
-video/       30-second demo video and the scripts that made it
+video/       30-second demo video
+slides/      7-slide presentation (PDF and PowerPoint)
 run_pipeline.sh, forecast.sh   full rebuild / monthly forecast refresh
 ```
 
@@ -86,4 +89,4 @@ run_pipeline.sh, forecast.sh   full rebuild / monthly forecast refresh
 
 ## Use of AI tools (SI)
 
-We used **Claude (Anthropic)** as a coding and writing assistant: for the code in `site/` and `pipeline/`, the data-processing scripts, the documentation and the demo video. The video carries a visible "SI-assisted" watermark. Its narration is a **synthetic text-to-speech voice**, noted in the video's metadata. The team chose the approach, checked the results and ran every step. The data is real NASA and partner data, not generated. No NASA logos or branding are used.
+We used **Claude (Anthropic)** as a coding and writing assistant: for the code in `site/` and `pipeline/`, the data-processing scripts, the documentation, the slides and the demo video. The video's narration is a **synthetic text-to-speech voice**; this is stated here and in the video file's metadata. The team chose the approach, checked the results and ran every step. The data is real NASA and partner data, not generated. No NASA logos or branding are used.
