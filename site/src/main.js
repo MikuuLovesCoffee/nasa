@@ -3,7 +3,7 @@ import { Globe, RAMPS } from "./globe.js";
 import { lineChart, barChart, sparkline, fmt, showTip, hideTip } from "./charts.js";
 import {
   loadMeta, loadHistory, aggregate, loadCell, loadForecast, loadLive, LIVE_SOURCES,
-  cell05ToLatLon, cell1ToLatLon, latLonToCell1, latLonToCell05, ymLabel,
+  cell05ToLatLon, cell1ToLatLon, latLonToCell1, latLonToCell05, ymLabel, COLS05,
 } from "./data.js";
 import { placeAt, regionsInSquare } from "./places.js";
 import { MON, areaIndex, resolveArea, areaWeights, areaSeries, areaKm2, analyse, runLabel, cellColor, HEAT, DIV, toCSV, provKey } from "./calendar.js";
@@ -34,7 +34,7 @@ const pct = (p) => `${Math.round(p * 100)}%`;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const prettyCountry = (s) => (s || "").replace(/_/g, " ");
 
-const state = { mode: "history", step: "year", src: "harm", idx: 0, playing: false, current: null, live: null, liveRange: "24h", liveColor: "unified", liveFilter: readLiveFilter(), fcMonth: 1, fcOverlay: false, smoke: "off", aoi: readAoiParam(), calColor: "activity", pick: "province", boxStart: null, calMonth: null };
+const state = { mode: "history", step: "year", src: "harm", idx: 0, playing: false, current: null, live: null, liveRange: "24h", liveColor: "unified", liveFilter: readLiveFilter(), fcMonth: 1, fcOverlay: false, smoke: "off", aoi: readAoiParam(), calColor: "activity", pick: "province", boxStart: null, calMonth: null, fcAoi: null, fcPick: "cell", fcBoxStart: null, fcA: null };
 let globe, meta, hist, forecast;
 
 // ---------------------------------------------------------------- boot
@@ -62,6 +62,7 @@ async function boot() {
   setStep("year", true);
   state.idx = meta.years.length - 1;
   const qm = new URLSearchParams(location.search).get("mode");
+  if (qm === "forecast" && state.aoi) state.fcAoi = state.aoi;
   setMode(["history", "calendar", "live", "forecast"].includes(qm) ? qm : state.aoi ? "calendar" : "history");
   $("#loader").classList.add("done");
 }
@@ -96,7 +97,12 @@ function bindUI() {
       renderHistory();
     }
   });
-  globe.on("click", (ll) => { if (!ll) return; if (state.mode === "calendar") calendarClick(ll); else openCell(ll.lat, ll.lon); });
+  globe.on("click", (ll) => {
+    if (!ll) return;
+    if (state.mode === "calendar") calendarClick(ll);
+    else if (state.mode === "forecast" && state.fcPick !== "cell") forecastClick(ll);
+    else openCell(ll.lat, ll.lon);
+  });
   globe.on("hover", onHover);
 }
 
@@ -106,8 +112,11 @@ function setMode(mode) {
   stopPlay();
   globe.hideAll();
   globe.setOutline(null);
-  $("#panel").classList.toggle("wide", mode === "calendar");
+  $("#panel").classList.toggle("wide", mode === "calendar" || (mode === "forecast" && !!state.fcAoi));
   $("#timeline").classList.toggle("hidden", mode !== "history");
+  globe.setMarker(null);
+  state.boxStart = state.fcBoxStart = null;
+  writeAoiUrl();
   if (mode === "calendar") { closeCell(); applySmoke(); renderCalendar(); return; }
   if (mode === "history") renderHistory();
   if (mode === "live") renderLive();
@@ -170,11 +179,13 @@ function onHover(ll, e) {
   } else if (state.mode === "calendar") {
     html = state.pick === "box" ? `<b>${fmtLat(ll.lat, ll.lon)}</b><div class="muted small">${state.boxStart ? "Click the opposite corner" : "Click the first corner of the box"}</div>` : `<div class="muted small">Click to pick this ${state.pick}</div>`;
   } else if (state.mode === "forecast" && forecast) {
-    const f = forecast.byCell.get(latLonToCell1(ll.lat, ll.lon));
+    const f = forecast.byCell?.get(latLonToCell1(ll.lat, ll.lon));
+    const pk = state.fcPick;
+    const hint = pk === "cell" ? "Click for why" : pk === "box" ? (state.fcBoxStart ? "Click the opposite corner" : "Click the first corner of the box") : `Click for this ${pk}'s forecast`;
     if (f) {
       const p = f[1 + state.fcMonth] / 1000, rc = riskClass(p);
-      html = `<b>${fmtLat(ll.lat, ll.lon)}</b><div class="row"><span><i class="sw" style="background:${rc.color}"></i>${rc.name} risk</span><span>${pct(p)}</span></div><div class="muted small">Click for why</div>`;
-    }
+      html = `<b>${fmtLat(ll.lat, ll.lon)}</b><div class="row"><span><i class="sw" style="background:${rc.color}"></i>${rc.name} risk</span><span>${pct(p)}</span></div><div class="muted small">${hint}</div>`;
+    } else if (pk !== "cell") html = `<b>${fmtLat(ll.lat, ll.lon)}</b><div class="muted small">${hint}</div>`;
   }
   if (html) { showTip(html, e.clientX, e.clientY); $("#globe").style.cursor = "pointer"; }
   else { hideTip(); $("#globe").style.cursor = ""; }
@@ -290,13 +301,14 @@ function readAoiParam() {
 }
 function writeAoiUrl() {
   try {
-    const u = new URL(location.href), a = state.aoi;
-    if (state.mode === "calendar" && a) {
-      u.searchParams.set("mode", "calendar");
+    const u = new URL(location.href);
+    const a = state.mode === "calendar" ? state.aoi : state.mode === "forecast" ? state.fcAoi : null;
+    if (a) {
+      u.searchParams.set("mode", state.mode);
       u.searchParams.set("area", a.box ? `${a.kind}:${a.box.map((v) => +(+v).toFixed(2)).join(",")}` : `${a.kind}:${a.key}`);
     } else {
       u.searchParams.delete("area");
-      if (u.searchParams.get("mode") === "calendar") u.searchParams.delete("mode");
+      if (u.searchParams.get("mode") !== state.mode) u.searchParams.delete("mode");
     }
     history.replaceState(null, "", u);
   } catch {}
@@ -333,6 +345,8 @@ async function calendarClick(ll) {
 function bindCalBtn() {
   const b = $("#cell-body .cal-btn");
   if (b) b.addEventListener("click", () => setArea({ kind: "province", key: b.dataset.key }));
+  const f = $("#cell-body .fc-btn");
+  if (f) f.addEventListener("click", () => setFcArea({ kind: "province", key: f.dataset.key }));
 }
 
 async function renderCalendar() {
@@ -478,6 +492,7 @@ function calendarPanel() {
       ${outlook.map((o) => `<tr><td>${ymLabel(o.ym)}</td><td>${o.covered ? pct(o.mean) : "–"}</td><td>${o.covered ? pct(o.top) : "–"}</td><td>${o.high}</td></tr>`).join("")}</table>
     <p class="muted small">Chance of ≥${forecast.threshold} detections per 1° cell (AI Forecast tab), issued ${forecast.issued}. A normal ${outlook.map((o) => MON[(o.ym % 100) - 1]).join(" / ")} here has ${outlook.map((o) => fmt(A.norm[(o.ym % 100) - 1].mean)).join(" / ")} detections.</p>` : ""}`}
     <div class="row-ctl" style="margin-top:16px">
+      ${forecast ? `<button class="btn" id="cal-fc">AI forecast for this area →</button>` : ""}
       <button class="btn" id="cal-csv">Download CSV</button>
       <button class="btn" id="cal-link">Copy link</button>
     </div>
@@ -521,6 +536,7 @@ function calendarPanel() {
   grid.addEventListener("click", (e) => { const t = e.target.closest("[data-i]"); if (t) pickMonth(+t.dataset.i); });
   document.querySelectorAll("#panel-body .rank li[data-i]").forEach((li) => li.addEventListener("click", () => pickMonth(+li.dataset.i)));
   $("#cal-all")?.addEventListener("click", (e) => { e.preventDefault(); pickMonth(state.calMonth); });
+  $("#cal-fc")?.addEventListener("click", () => setFcArea(state.aoi));
   $("#cal-csv").addEventListener("click", () => {
     const blob = new Blob([toCSV(area, A)], { type: "text/csv" });
     const a = document.createElement("a");
@@ -675,6 +691,19 @@ async function renderForecast() {
     return;
   }
   if (!forecast.byCell) forecast.byCell = new Map(forecast.cells.map((r) => [r[0], r]));
+  let fresh = false;
+  if (state.fcAoi && state.fcA?.spec !== state.fcAoi) {
+    const spec = state.fcAoi;
+    $("#panel-body").innerHTML = `<p class="eyebrow">AI forecast · area</p><h2>Adding up the forecast…</h2><p class="lede">Collecting the AI's 1° squares inside the area and comparing them with 25 years of fire there.</p>`;
+    const A = await buildFcArea(spec);
+    if (state.fcAoi !== spec || state.mode !== "forecast") return;
+    if (!A) { state.fcAoi = null; state.fcA = null; return renderForecast(); }
+    state.fcA = A;
+    fresh = true;
+  }
+  if (state.mode !== "forecast") return;
+  const A = state.fcAoi ? state.fcA : null;
+  $("#panel").classList.toggle("wide", !!A);
   drawForecast();
   if (state.fcOverlay) {
     if (!state.live) state.live = await loadLive("24h");
@@ -682,15 +711,30 @@ async function renderForecast() {
     const u = liveView().unified;
     globe.setPoints("overlay", { lats: Float32Array.from(u, (d) => d.lat), lons: Float32Array.from(u, (d) => d.lon), values: new Float32Array(u.length).fill(1), ramp: "heat", size: 0.004, minSize: 1, opacity: 0.9, radius: 1.006 });
   } else globe.hideLayer("overlay");
-  forecastPanel();
+  if (A) fcAreaPanel(); else forecastPanel();
+  writeAoiUrl();
+  if (fresh && A.center) globe.flyTo(A.center[0], A.center[1], Math.min(3.2, 1.55 + Math.sqrt(A.km2) / 1500));
 }
 
 function drawForecast() {
-  const rows = forecast.cells.filter((r) => r[1 + state.fcMonth] >= 100);
-  const lats = new Float32Array(rows.length), lons = new Float32Array(rows.length), vals = new Float32Array(rows.length);
-  // snap to the legend's classes: Moderate=0, High=1/3, Very high=2/3, Extreme=1
-  rows.forEach((r, i) => { const ll = cell1ToLatLon(r[0]); lats[i] = ll.lat; lons[i] = ll.lon; vals[i] = (RISK.indexOf(riskClass(r[1 + state.fcMonth] / 1000)) - 1) / 3; });
-  globe.setPoints("risk", { lats, lons, values: vals, ramp: "risk", size: 0.02, minSize: 0.55, opacity: 0.55, soft: 0.55, blending: THREE.NormalBlending, radius: 1.003 });
+  const k = state.fcMonth, A = state.fcAoi ? state.fcA : null;
+  const rows = forecast.cells.filter((r) => r[1 + k] >= 100);
+  const layer = (name, list, opacity) => {
+    const lats = new Float32Array(list.length), lons = new Float32Array(list.length), vals = new Float32Array(list.length);
+    // snap to the legend's classes: Moderate=0, High=1/3, Very high=2/3, Extreme=1
+    list.forEach((r, i) => { const ll = cell1ToLatLon(r[0]); lats[i] = ll.lat; lons[i] = ll.lon; vals[i] = (RISK.indexOf(riskClass(r[1 + k] / 1000)) - 1) / 3; });
+    globe.setPoints(name, { lats, lons, values: vals, ramp: "risk", size: 0.02, minSize: 0.55, opacity, soft: 0.55, blending: THREE.NormalBlending, radius: 1.003 });
+  };
+  if (!A) {
+    layer("risk", rows, 0.55);
+    globe.hideLayer("riskDim");
+    globe.setOutline(null);
+    return;
+  }
+  // area picked: its squares bright, the rest of the world faded for context
+  layer("risk", rows.filter((r) => A.w1.has(r[0])), 0.8);
+  layer("riskDim", rows.filter((r) => !A.w1.has(r[0])), 0.13);
+  globe.setOutline(A.area.rings);
 }
 
 function forecastPanel() {
@@ -705,7 +749,9 @@ function forecastPanel() {
     <p class="eyebrow">AI forecast · issued ${F.issued}</p>
     <h2>Fire risk, ${mlabel}</h2>
     <p class="lede">Chance of significant fire activity (≥${F.threshold} VIIRS-eq. detections) in each 1° cell. The model learned when <b>a place</b> and <b>its weather</b> lined up with fire in the past 25 years, and looks for that pattern again in the latest NASA POWER weather.</p>
-    <div class="seg" role="group" aria-label="Forecast month" style="margin-bottom:10px">
+    <h3 style="margin-top:4px">Forecast for an area</h3>
+    ${fcPickerHtml()}
+    <div class="seg" role="group" aria-label="Forecast month" style="margin:10px 0">
       ${F.months.map((m, i) => `<button data-fm="${i}" aria-pressed="${i === k}">${ymLabel(m)}${i === 0 ? " (now)" : ""}</button>`).join("")}
     </div>
     <div class="classes">${RISK.map((r, i) => `<div><span style="background:${r.color}"></span>${r.name}<br><b style="color:var(--text-2)">${fmt(counts[i])}</b></div>`).join("")}</div>
@@ -726,7 +772,243 @@ function forecastPanel() {
   `;
   document.querySelectorAll("[data-fm]").forEach((b) => b.addEventListener("click", () => { state.fcMonth = +b.dataset.fm; renderForecast(); }));
   $("#fc-overlay").addEventListener("click", () => { state.fcOverlay = !state.fcOverlay; renderForecast(); });
-  document.querySelectorAll(".rank li").forEach((li) => li.addEventListener("click", () => { const c = meta.countryCenters[li.dataset.country]; if (c) globe.flyTo(c[0], c[1], 2.2); }));
+  document.querySelectorAll(".rank li").forEach((li) => li.addEventListener("click", () => setFcArea({ kind: "country", key: li.dataset.country })));
+  bindFcPicker();
+}
+
+// ---------------------------------------------------------------- FORECAST · area of interest
+// Same areas as the Fire Calendar (country / republic / province / drawn box).
+// URL: ?mode=forecast&area=country:Uzbekistan | province:<iso>|<name> | box:lat0,lon0,lat1,lon1
+const c05to1 = (k) => Math.floor(Math.floor(k / COLS05) / 2) * 360 + Math.floor((k % COLS05) / 2);
+
+/** 1° forecast square -> share of it inside the area (0..1). */
+function squaresOf(w) {
+  const m = new Map();
+  for (let k = 0; k < w.length; k++) if (w[k]) { const c1 = c05to1(k); m.set(c1, (m.get(c1) || 0) + w[k] / 4); }
+  return m;
+}
+
+/**
+ * "Same as usual" for one calendar month: for each 1° square, the share of past years in which it
+ * had ≥ threshold detections (the AI's baseline), plus the area's total detections in each year.
+ */
+function usualFor(w, w1, mo) {
+  const hits = new Map(), years = [];
+  for (let m = 0; m < hist.nM; m++) {
+    if (meta.months[m] % 100 !== mo) continue;
+    const sq = new Map();
+    let t = 0;
+    for (let i = hist.offsets[m]; i < hist.offsets[m + 1]; i++) {
+      const k = hist.cells[i], c1 = c05to1(k), v = hist.harm[i];
+      if (w1.has(c1)) sq.set(c1, (sq.get(c1) || 0) + v);
+      if (w[k]) t += w[k] * v;
+    }
+    for (const [c1, v] of sq) if (v >= forecast.threshold) hits.set(c1, (hits.get(c1) || 0) + 1);
+    years.push({ y: Math.floor(meta.months[m] / 100), t });
+  }
+  const n = years.length;
+  const rate = new Map([...w1.keys()].map((c1) => [c1, n ? (hits.get(c1) || 0) / n : 0]));
+  const sorted = years.map((y) => y.t).sort((a, b) => a - b);
+  const median = n ? (n % 2 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2) : 0;
+  return { rate, years, median, last: years.at(-1) || null };
+}
+
+/** AI vs usual over a set of squares, for forecast month k. */
+function fcSummary(w1, rate, k) {
+  let sw = 0, eAI = 0, eU = 0, high = 0, top = null;
+  for (const [c1, ww] of w1) {
+    const row = forecast.byCell.get(c1), p = row ? row[1 + k] / 1000 : 0, u = rate.get(c1) || 0;
+    sw += ww; eAI += p * ww; eU += u * ww;
+    if (ww >= 0.25) {
+      if (p >= 0.5) high++;
+      if (!top || p > top.p) top = { c1, p, u };
+    }
+  }
+  return { sw, mean: sw ? eAI / sw : 0, usual: sw ? eU / sw : 0, eAI, eU, high, top };
+}
+
+async function buildFcArea(spec) {
+  const area = await resolveArea(spec);
+  if (!area) return null;
+  const w = areaWeights(area), w1 = squaresOf(w);
+  const usual = forecast.months.map((ym) => usualFor(w, w1, ym % 100));
+  let sl = 0, so = 0, sw = 0;
+  for (let k = 0; k < w.length; k++) if (w[k]) { const ll = cell05ToLatLon(k); sl += ll.lat * w[k]; so += ll.lon * w[k]; sw += w[k]; }
+  const A = { spec, area, w, w1, usual, km2: areaKm2(w), center: sw ? [sl / sw, so / sw] : null, provs: null };
+  // a country: rank its provinces / republics by the AI's chance (each scored with the same baseline)
+  if (spec.kind === "country" && area.parts.length > 1 && area.parts.length <= 150) {
+    A.provs = area.parts.map((r) => {
+      const pw1 = squaresOf(areaWeights({ parts: [r] }));
+      return { r, by: forecast.months.map((_, k) => fcSummary(pw1, usual[k].rate, k)) };
+    }).filter((p) => p.by[0].sw >= 0.1);
+  }
+  // the hottest squares, named after the province at their centre
+  A.hot = forecast.months.map((_, k) => [...A.w1].filter(([, ww]) => ww >= 0.25)
+    .map(([c1]) => ({ c1, p: (forecast.byCell.get(c1)?.[1 + k] || 0) / 1000, u: usual[k].rate.get(c1) || 0 }))
+    .filter((h) => h.p >= 0.1).sort((a, b) => b.p - a.p || (b.p - b.u) - (a.p - a.u)).slice(0, 6));
+  const names = new Map();
+  await Promise.all([...new Set(A.hot.flat().map((h) => h.c1))].map(async (c1) => {
+    const ll = cell1ToLatLon(c1), r = await placeAt(ll.lat, ll.lon);
+    names.set(c1, r ? r.name : fmtLat(ll.lat, ll.lon));
+  }));
+  A.names = names;
+  return A;
+}
+
+function setFcArea(spec) {
+  state.fcAoi = spec;
+  state.fcBoxStart = null;
+  globe.setMarker(null);
+  if (spec) closeCell();
+  if (state.mode !== "forecast") setMode("forecast");
+  else renderForecast();
+}
+
+async function forecastClick(ll) {
+  if (state.fcPick === "box") {
+    if (!state.fcBoxStart) {
+      state.fcBoxStart = ll;
+      globe.setMarker(ll.lat, ll.lon);
+      const h = $("#fc-pick-hint");
+      if (h) h.textContent = "Now click the opposite corner of the box.";
+      return;
+    }
+    const a = state.fcBoxStart;
+    state.fcBoxStart = null;
+    globe.setMarker(null);
+    if (Math.abs(a.lat - ll.lat) < 0.5 || Math.abs(a.lon - ll.lon) < 0.5) return; // forecast squares are 1°
+    setFcArea({ kind: "box", box: [a.lat, a.lon, ll.lat, ll.lon] });
+    return;
+  }
+  const r = await placeAt(ll.lat, ll.lon);
+  if (!r) return; // sea
+  setFcArea(state.fcPick === "country" ? { kind: "country", key: r.country } : { kind: "province", key: provKey(r) });
+}
+
+function fcHint() {
+  const p = state.fcPick;
+  return p === "cell" ? "Clicking the globe opens one 1° square. Search above or switch the click to pick a whole area."
+    : p === "box" ? (state.fcBoxStart ? "Now click the opposite corner of the box." : "Click two opposite corners on the globe.")
+    : `Click anywhere on the globe to get the forecast for that ${p === "country" ? "country" : "province or republic"}.`;
+}
+
+function fcPickerHtml() {
+  const p = state.fcPick, hint = fcHint();
+  const opts = [["cell", "Click: square"], ["province", "Click: province / republic"], ["country", "Click: country"], ["box", "Draw a box"]];
+  return `<div class="aoi-pick">
+      <input id="fc-q" list="fc-list" placeholder="Search a country, province or republic…" autocomplete="off" aria-label="Search area">
+      <datalist id="fc-list"></datalist>
+      <div class="seg" role="group" aria-label="Click on the globe picks">
+        ${opts.map(([k, l]) => `<button data-fpick="${k}" aria-pressed="${p === k}">${l}</button>`).join("")}
+      </div>
+      <p class="muted small" id="fc-pick-hint" style="margin:0">${hint}</p>
+    </div>`;
+}
+
+function bindFcPicker() {
+  areaIndex().then((list) => {
+    const dl = $("#fc-list");
+    if (!dl) return;
+    state.areaList = list;
+    dl.innerHTML = list.map((o) => `<option value="${esc(o.label)}">${o.kind === "country" ? "Country" : "Province / republic"}</option>`).join("");
+  });
+  const q = $("#fc-q");
+  const find = (v, loose) => state.areaList?.find((o) => o.label.toLowerCase() === v) || (loose ? state.areaList?.find((o) => o.label.toLowerCase().startsWith(v)) : null);
+  q.addEventListener("change", () => { const hit = find(q.value.trim().toLowerCase()); if (hit) setFcArea({ kind: hit.kind, key: hit.key }); });
+  q.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    const hit = find(q.value.trim().toLowerCase(), true);
+    if (hit) setFcArea({ kind: hit.kind, key: hit.key });
+  });
+  document.querySelectorAll("[data-fpick]").forEach((b) => b.addEventListener("click", () => {
+    state.fcPick = b.dataset.fpick;
+    state.fcBoxStart = null;
+    if (!state.cell) globe.setMarker(null);
+    $("#fc-pick-hint").textContent = fcHint();
+    document.querySelectorAll("[data-fpick]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.fpick === state.fcPick));
+  }));
+}
+
+const fewSquares = (v) => (v < 0.05 ? "0" : v < 10 ? v.toFixed(1) : fmt(Math.round(v)));
+
+function fcVerdict(s, mon) {
+  if (s.eAI < 0.05 && s.eU < 0.05) return { cls: "", text: `Quiet: almost no significant fire is expected here in ${mon}, and there usually is none.` };
+  if (Math.max(s.mean, s.usual) < 0.1) return { cls: "same", label: "Low", text: `Little significant fire is expected here in ${mon}: an average chance of <b>${pct(s.mean)}</b> per square (usually ${pct(s.usual)}).` };
+  const r = s.eU >= 0.05 ? s.eAI / s.eU : Infinity;
+  if (Math.abs(s.mean - s.usual) < 0.05) return { cls: "same", label: "About usual", text: `The AI gives an average chance of <b>${pct(s.mean)}</b> per square here; a usual ${mon} is <b>${pct(s.usual)}</b>.` };
+  const vs = `Average chance <b>${pct(s.mean)}</b> per square (usually ${pct(s.usual)}). The AI expects about <b>${fewSquares(s.eAI)}</b> fire-active 1° square${s.eAI >= 0.95 && s.eAI < 1.05 ? "" : "s"} here; a usual ${mon} has <b>${fewSquares(s.eU)}</b>.`;
+  if (r >= 1.25) return { cls: "up", label: r === Infinity ? "Fire where there's usually none" : `Higher than usual · +${Math.round((r - 1) * 100)}%`, text: vs };
+  if (r <= 0.8) return { cls: "down", label: `Lower than usual · −${Math.round((1 - r) * 100)}%`, text: vs };
+  return { cls: "same", label: "About usual", text: vs };
+}
+
+function fcAreaPanel() {
+  const F = forecast, A = state.fcA, k = state.fcMonth, area = A.area;
+  const mon = MON[(F.months[k] % 100) - 1], U = A.usual[k];
+  const S = F.months.map((_, i) => fcSummary(A.w1, A.usual[i].rate, i));
+  const s = S[k], v = fcVerdict(s, mon);
+  const top = s.top;
+  const provs = A.provs ? [...A.provs].sort((a, b) => b.by[k].mean - a.by[k].mean).slice(0, 10) : null;
+  const hot = A.hot[k];
+  const ratioTxt = (x) => (Math.max(x.mean, x.usual) < 0.1 ? "low" : x.eU >= 0.05 ? `${(x.eAI / x.eU).toFixed(1)}×` : "new");
+  $("#panel-body").innerHTML = `
+    <p class="eyebrow">AI forecast · area of interest · issued ${F.issued}</p>
+    <h2>${esc(prettyCountry(area.name))}</h2>
+    <p class="muted" style="margin:-2px 0 10px">${esc(area.sub)} · ≈ ${fmt(A.km2)} km² · ${fmt(Math.round([...A.w1.values()].reduce((a, b) => a + b, 0)))} forecast squares</p>
+    ${fcPickerHtml()}
+    <div class="row-ctl" style="margin:10px 0">
+      <div class="seg" role="group" aria-label="Forecast month">
+        ${F.months.map((m, i) => `<button data-fm="${i}" aria-pressed="${i === k}">${ymLabel(m)}${i === 0 ? " (now)" : ""}</button>`).join("")}
+      </div>
+      <button class="btn" id="fc-world">← World view</button>
+    </div>
+    <div class="callout fc-verdict ${v.cls}">${v.label ? `<b class="fc-label">${v.label}</b><br>` : ""}${v.text}
+      ${top && top.p >= 0.1 ? ` Highest: <b>${pct(top.p)}</b> near ${esc(A.names.get(top.c1) || "")} (usually ${pct(top.u)}).` : ""}
+      ${U.years.length ? ` A normal ${mon} here has <b>${fmt(U.median)}</b> detections; ${mon} ${U.last.y} had <b>${fmt(U.last.t)}</b>.` : ""}</div>
+    <table class="data">
+      <tr><th>Month</th><th>AI chance</th><th>Usual</th><th>Active squares (AI / usual)</th><th>High-risk squares</th></tr>
+      ${S.map((x, i) => `<tr${i === k ? ' class="sel"' : ""}><td>${ymLabel(F.months[i])}</td><td><b>${pct(x.mean)}</b></td><td>${pct(x.usual)}</td><td>${fewSquares(x.eAI)} / ${fewSquares(x.eU)} <span class="muted">(${ratioTxt(x)})</span></td><td>${x.high}</td></tr>`).join("")}
+    </table>
+    <p class="muted small">AI chance = average chance of ≥${F.threshold} VIIRS-eq. detections per 1° square, weighted by how much of each square lies inside the area. Usual = how often those squares reached that level in the same month, ${meta.years[0]}–${meta.years.at(-1)} (the "same as usual" baseline). High-risk = ≥50%.</p>
+    ${provs && provs.length ? `<h3>${provs.length < A.provs.length ? `Top ${provs.length} of ${A.provs.length}` : "All"} provinces / republics, ${ymLabel(F.months[k])}</h3>
+      <ul class="rank">${provs.map((p, i) => { const x = p.by[k]; return `<li data-pkey="${esc(provKey(p.r))}"><span class="i">${i + 1}</span><span>${esc(p.r.name)}<span class="muted small"> · ${esc(p.r.type || "Province")}</span><div class="bar" style="width:${provs[0].by[k].mean ? (x.mean / provs[0].by[k].mean) * 100 : 0}%;background:${riskClass(x.mean).color}"></div></span><span class="n">${pct(x.mean)} <span class="muted">${ratioTxt(x)}</span></span></li>`; }).join("")}</ul>
+      <p class="muted small">Click a province or republic to see its own forecast. "×" = AI vs usual.</p>` : ""}
+    <h3>Hottest squares, ${ymLabel(F.months[k])}</h3>
+    ${hot.length ? `<ul class="rank">${hot.map((h, i) => `<li data-c1="${h.c1}"><span class="i">${i + 1}</span><span>${esc(A.names.get(h.c1) || "")}<span class="muted small"> · ${fmtLat(cell1ToLatLon(h.c1).lat, cell1ToLatLon(h.c1).lon)}</span><div class="bar" style="width:${(h.p / hot[0].p) * 100}%;background:${riskClass(h.p).color}"></div></span><span class="n">${pct(h.p)} <span class="muted">usually ${pct(h.u)}</span></span></li>`).join("")}</ul>
+      <p class="muted small">Click a square to see why the AI rates it this way.</p>` : `<p class="lede small">No square in this area is above 10% this month.</p>`}
+    <div class="row-ctl" style="margin-top:16px">
+      <button class="btn" id="fc-cal">Fire calendar for this area →</button>
+      <button class="btn" id="fc-csv">Download CSV</button>
+      <button class="btn" id="fc-link">Copy link</button>
+    </div>
+    <label class="chip" style="margin-top:14px" aria-pressed="${state.fcOverlay}" id="fc-overlay"><span class="sw" style="background:#ffe39a"></span>Overlay live fires (24h) to check</label>
+    <p class="muted small" style="margin-top:12px">Model: gradient-boosted trees (XGBoost) on NASA POWER weather, wind, vegetation and forest data; on unusual fires it is ${F.metrics.unusual_ap ? `${Math.round((F.metrics.unusual_ap / F.metrics.unusual_baseline_ap - 1) * 100)}%` : "much"} more precise than "same as usual" (tested on ${F.metrics.test_years}). Squares are 1° (≈ 110 km), so small provinces share squares with their neighbours.</p>`;
+
+  document.querySelectorAll("[data-fm]").forEach((b) => b.addEventListener("click", () => { state.fcMonth = +b.dataset.fm; renderForecast(); }));
+  $("#fc-world").addEventListener("click", () => setFcArea(null));
+  $("#fc-overlay").addEventListener("click", () => { state.fcOverlay = !state.fcOverlay; renderForecast(); });
+  document.querySelectorAll("#panel-body li[data-pkey]").forEach((li) => li.addEventListener("click", () => setFcArea({ kind: "province", key: li.dataset.pkey })));
+  document.querySelectorAll("#panel-body li[data-c1]").forEach((li) => li.addEventListener("click", () => { const ll = cell1ToLatLon(+li.dataset.c1); openCell(ll.lat, ll.lon); }));
+  $("#fc-cal").addEventListener("click", () => setArea(state.fcAoi));
+  $("#fc-link").addEventListener("click", async (e) => {
+    try { await navigator.clipboard.writeText(location.href); e.target.textContent = "Link copied"; } catch { e.target.textContent = "Copy failed"; }
+  });
+  $("#fc-csv").addEventListener("click", () => {
+    const rows = [["area", "month", "lat", "lon", "share_inside", "province", "ai_chance", "usual_chance"]];
+    F.months.forEach((ym, i) => {
+      for (const [c1, ww] of A.w1) {
+        const ll = cell1ToLatLon(c1), p = (F.byCell.get(c1)?.[1 + i] || 0) / 1000;
+        rows.push([area.name, ym, ll.lat, ll.lon, ww.toFixed(2), A.names.get(c1) || "", p.toFixed(3), (A.usual[i].rate.get(c1) || 0).toFixed(3)]);
+      }
+    });
+    const csv = rows.map((r) => r.map((x) => (/[",\n]/.test(String(x)) ? `"${String(x).replace(/"/g, '""')}"` : x)).join(",")).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    a.download = `ember-atlas_ai-forecast_${String(area.name).replace(/[^\w-]+/g, "_")}.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  });
+  bindFcPicker();
 }
 
 // ---------------------------------------------------------------- CELL CARD
@@ -756,7 +1038,7 @@ async function openCell(lat, lon, fly = true) {
       <p class="small" style="margin:0"><b>Fire numbers below are for the outlined square</b> ${sqName}, about ${kmNS} × ${kmEW} km. That's the grid the 25-year record and the AI use, so it can span more than one province (viloyat).</p>
       ${covers.length ? `<p class="small muted" style="margin:6px 0 0">The square covers: ${covers.map((r) => `${esc(r.name)}${r.country !== place?.country ? ` (${esc(r.country)})` : ""} ${pct(r.share)}`).join(" · ")}${inSq.sea >= 0.02 ? ` · water ${pct(inSq.sea)}` : ""}</p>` : ""}
     </div>
-    ${place?.country ? `<button class="btn cal-btn" data-key="${esc(provKey(place))}">Fire calendar for ${esc(place.name)} →</button>` : ""}
+    ${place?.country ? `<div class="row-ctl"><button class="btn cal-btn" data-key="${esc(provKey(place))}">Fire calendar for ${esc(place.name)} →</button>${state.mode === "forecast" && forecast ? `<button class="btn fc-btn" data-key="${esc(provKey(place))}">AI forecast for ${esc(place.name)} →</button>` : ""}</div>` : ""}
     ${det ? fireMomentHtml(det) : ""}`;
   if (!d) {
     body.innerHTML = `${head}<h3>No fire on record</h3><p class="lede">No vegetation fire was detected in this square by MODIS or VIIRS since 2000.</p>${SAT_SLOT}`;
@@ -1019,6 +1301,8 @@ function openAbout() {
     </ul>
     <h3>Fire Calendar</h3>
     <p>Pick any country or province (Natural Earth borders), or draw a box. Each 0.5° cell is weighted by the share of it inside the area, and the unified monthly counts become a year × month calendar. "Normal" for a month is its median over all years; a month is <b>unusual</b> when it is more than 2 robust spreads (median absolute deviation, log scale) above or below that. The <b>critical period</b> is the smallest set of months that holds 80% of a normal year's fire. Trends use the Theil–Sen slope with a Mann–Kendall test. Everything downloads as CSV.</p>
+    <h3>AI forecast for an area</h3>
+    <p>In the AI Forecast tab, search or click a country, province or republic, or draw a box. The 1° forecast squares inside it are weighted by how much of each lies inside the area. The panel compares the AI's chance with the <b>"same as usual" baseline</b> (how often those squares reached ≥30 detections in that month since 2001), ranks a country's provinces, lists the hottest squares, and downloads as CSV. Shareable link: <code>?mode=forecast&amp;area=country:Uzbekistan</code>.</p>
     <h3>2 · Live</h3>
     <p>Near-real-time FIRMS feeds from 4 satellites: VIIRS on NOAA-21 and NOAA-20, MODIS on Terra and Aqua (Suomi NPP stopped delivering data on 2 Nov 2026). Detections of the same fire seen by different satellites are merged, so each fire counts once. <b>Fires only</b> takes gas flares (VIIRS Nightfire sites), volcanoes (Smithsonian) and industrial heat (25 years of NASA labels) out of the count and draws them in their own colours.</p>
     <p>Click any fire to see <b>real satellite pictures</b>: the photo from the very pass that detected it, a 10–15-minute weather-satellite loop of the last hours (GOES, Meteosat, Himawari), daily NASA photos, and a sharp Sentinel-2 "fire view" before/after. A smoke or carbon-monoxide layer can be draped over the globe.</p>

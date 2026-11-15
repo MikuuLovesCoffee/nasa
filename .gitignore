@@ -1,7 +1,7 @@
 /data
 /backup
 /deploy
-
+/docs
 # dependencies and build output
 node_modules/
 site/dist/

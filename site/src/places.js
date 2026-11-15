@@ -27,7 +27,8 @@ export function loadRegions() {
         return {
           polys, bbox: [x0, y0, x1, y1],
           name: UZ[p.iso_3166_2] || p.name_en || p.name || "Unnamed region",
-          type: p.type_en || "", country: p.admin || "", iso: p.iso_3166_2 || "",
+          type: p.iso_3166_2 === "UZ-QR" ? "Autonomous Republic" : (p.type_en || "").replace("Automonous", "Autonomous"),
+          country: p.admin || "", iso: p.iso_3166_2 || "",
         };
       });
     })

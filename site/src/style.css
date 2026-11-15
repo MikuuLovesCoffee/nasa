@@ -233,3 +233,14 @@ details.table-view summary { cursor: pointer; color: var(--text-3); font-size: 1
 .cal-key.crit { background: var(--ember); }
 .cal-btn { width: 100%; margin: 6px 0 2px; text-align: left; border-color: rgba(240,138,36,.4); background: var(--ember-soft); }
 @media (max-width: 860px) { .panel.wide { width: auto; } .modes button { font-size: 12px; } }
+
+/* AI forecast · area of interest */
+.fc-verdict .fc-label { font-size: 14px; }
+.fc-verdict.up { border-color: rgba(255,77,94,.45); background: rgba(255,77,94,.08); }
+.fc-verdict.up .fc-label { color: #ff8a7a; }
+.fc-verdict.down { border-color: rgba(93,143,216,.45); background: rgba(93,143,216,.08); }
+.fc-verdict.down .fc-label { color: #8fb4ec; }
+.fc-verdict.same .fc-label { color: var(--text); }
+table.data tr.sel td { background: rgba(255,255,255,.05); }
+.rank li[data-pkey], .rank li[data-c1] { cursor: pointer; }
+#panel-body .row-ctl, #cell-body .row-ctl { flex-wrap: wrap; }
