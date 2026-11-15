@@ -1,0 +1,13 @@
+/data
+/backup
+/deploy
+
+# dependencies and build output
+node_modules/
+site/dist/
+__pycache__/
+*.pyc
+
+# notes and docs stay local (README.md is kept)
+*.md
+!README.md

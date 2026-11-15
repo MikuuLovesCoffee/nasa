@@ -1,0 +1,22 @@
+{
+  "v": 5,
+  "createdOnFiles": { "v": 1, "at": "2026-11-14T18:40:00Z" },
+  "lists": "css",
+  "format": { "v": 1, "shared": ["project/deck.css"] },
+  "title": "Ember Atlas — Team Ainexa",
+  "cover": "cover",
+  "order": ["cover", "problem", "fix", "calendar", "live", "forecast", "impact"],
+  "sections": {
+    "s1": { "description": "Who we are and the question fire managers can't answer today", "start": "cover" },
+    "s2": { "description": "Why the satellite record can't answer it: two sensors, two rulers", "start": "problem" },
+    "s3": { "description": "How Ember Atlas harmonizes MODIS and VIIRS, and proof it works", "start": "fix" },
+    "s4": { "description": "The product: calendar, live fires and AI early warning", "start": "calendar" },
+    "s5": { "description": "Who it serves and the call to try it", "start": "impact" }
+  },
+  "faces": {
+    "space-grotesk": { "family": "Space Grotesk", "href": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&display=swap" },
+    "inter": { "family": "Inter", "href": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" },
+    "jetbrains-mono": { "family": "JetBrains Mono", "href": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" }
+  },
+  "designSystems": []
+}

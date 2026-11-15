@@ -1,0 +1,286 @@
+<title>Wind, Forest and Fire</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~760px) of findings, each finding = claim + chart + plain-language note */
+:root {
+  --bg: #f7f6f2; --surface: #fcfcfb; --fg: #17181b; --fg-2: #4f5059; --fg-3: #6f707a;
+  --line: #e2e0d8; --grid: #ebe9e2; --accent: #c4561a; --accent-soft: #f6e3d6;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --neutral: #9a9aa0; --cool: #2a78d6; --warm: #e34948;
+  --head: "Space Grotesk", "Segoe UI", Arial, sans-serif; --text: "Inter", "Segoe UI", Arial, sans-serif; --mono: "JetBrains Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d0f13; --surface: #14171d; --fg: #f0efec; --fg-2: #c3c2b7; --fg-3: #9a9a92;
+  --line: #262a33; --grid: #20242c; --accent: #f08a24; --accent-soft: #2a1d12;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neutral: #6f7078; --cool: #3987e5; --warm: #e66767; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0d0f13; --surface: #14171d; --fg: #f0efec; --fg-2: #c3c2b7; --fg-3: #9a9a92;
+  --line: #262a33; --grid: #20242c; --accent: #f08a24; --accent-soft: #2a1d12;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --neutral: #6f7078; --cool: #3987e5; --warm: #e66767; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--text); margin: 0; }
+.wrap { max-width: 820px; margin: 0 auto; padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 56px; }
+header { display: grid; gap: 14px; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 0; }
+h1 { font: 700 clamp(32px, 6vw, 48px)/1.05 var(--head); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+h2 { font: 600 26px/1.2 var(--head); letter-spacing: -.01em; margin: 0; text-wrap: balance; }
+h3 { font: 600 15px/1.3 var(--text); margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.lede { font-size: 18px; color: var(--fg-2); }
+.muted { color: var(--fg-3); font-size: 14px; }
+section { display: grid; gap: 16px; min-width: 0; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
+.tile .v { font: 700 32px/1.05 var(--head); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.tile .k { color: var(--fg-2); font-size: 14px; line-height: 1.45; }
+.chart { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; overflow-x: auto; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { fill: var(--fg-3); font: 12px var(--text); font-variant-numeric: tabular-nums; }
+.chart .lab { fill: var(--fg-2); font-size: 13px; }
+.chart .val { fill: var(--fg); font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--fg-2); margin: 0 0 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.legend i.line { width: 16px; height: 0; border-top: 2px dashed var(--fg-3); border-radius: 0; }
+.multiples { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.grid2 { display: grid; grid-template-columns: auto 1fr 1fr; gap: 4px; font-size: 13px; }
+.grid2 .h { color: var(--fg-3); font-size: 12px; text-align: center; align-self: end; }
+.grid2 .r { color: var(--fg-3); font-size: 12px; align-self: center; padding-right: 6px; }
+.grid2 .c { border-radius: 8px; padding: 12px 8px; text-align: center; font: 600 18px/1.1 var(--head); font-variant-numeric: tabular-nums; }
+.grid2 .c small { display: block; font: 400 11px/1.3 var(--text); margin-top: 4px; opacity: .85; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; white-space: normal; }
+th { color: var(--fg-3); font-weight: 500; font-size: 13px; }
+tr.hl td { background: var(--accent-soft); }
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.callout { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 14px 16px; border-radius: 0 10px 10px 0; color: var(--fg); }
+details summary { cursor: pointer; color: var(--fg-2); font-size: 14px; }
+details[open] summary { margin-bottom: 10px; }
+.tip { position: fixed; pointer-events: none; z-index: 20; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 13px; line-height: 1.45; box-shadow: 0 6px 24px rgb(0 0 0 / .18); max-width: 260px; }
+.tip b { font-weight: 600; }
+ul.src { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Ember Atlas · fire drivers study</p>
+    <h1>Do wind and forest change fire?</h1>
+    <p class="lede" id="lede"></p>
+    <div class="tiles" id="tiles"></div>
+  </header>
+
+  <section>
+    <h2>1. Strong wind, by land type</h2>
+    <p>Each dot is how often a month had big fire (≥30 detections in a 1° cell) when its strongest wind was calmer or windier than that place’s normal for the month, compared with all months of that land type. 1.0× means “no difference”. Lines show the 95% range.</p>
+    <div class="chart"><div class="legend" id="lg-wind"></div><svg id="ch-wind" role="img" aria-label="Fire likelihood by wind anomaly for open land, mixed and forest cells"></svg></div>
+    <p class="muted" id="note-wind"></p>
+  </section>
+
+  <section>
+    <h2>2. Wind together with dry air</h2>
+    <p>The same months split four ways: windy (strongest wind more than 1 standard deviation above normal) or not, and dry air (humidity more than 0.5 below normal) or not.</p>
+    <div class="multiples" id="mx-dry"></div>
+    <p class="muted" id="note-dry"></p>
+  </section>
+
+  <section>
+    <h2>3. Forest loss and the next year’s fire</h2>
+    <p>In cells with at least 10% tree cover: how often big fire happened in a year, by how much of the cell lost tree cover the year before (Hansen Global Forest Change). Cleared forest leaves dry debris and is often burned on purpose.</p>
+    <div class="chart"><svg id="ch-loss" role="img" aria-label="Fire likelihood by forest loss the year before"></svg></div>
+    <p class="muted" id="note-loss"></p>
+  </section>
+
+  <section>
+    <h2>4. Does it improve the forecast?</h2>
+    <p>The real test: add each group of inputs to the forecast model (which only sees last month’s data), choose on 2021–2022, then score on 2023–2025, years it never saw. “Unusual fires” are places and months that burn in fewer than 30% of years, where a forecast is most useful.</p>
+    <div class="tablewrap"><table id="tb-abl"></table></div>
+    <p class="muted" id="note-abl"></p>
+  </section>
+
+  <section>
+    <h2>5. What the model leans on</h2>
+    <p>Share of the model’s decisions (mean absolute SHAP value) per input group, in the model with every driver.</p>
+    <div class="chart"><svg id="ch-shap" role="img" aria-label="Share of model decisions by input group"></svg></div>
+    <h3>How much last month’s wind moves the predicted risk</h3>
+    <p class="muted">Odds multiplier from the wind inputs alone (1.0× = no push), by land type and how windy the previous month was.</p>
+    <div class="chart"><div class="legend" id="lg-push"></div><svg id="ch-push" role="img" aria-label="Wind push on predicted fire odds by land type"></svg></div>
+  </section>
+
+  <section>
+    <h2>What this means</h2>
+    <div class="callout" id="concl"></div>
+  </section>
+
+  <section>
+    <h2>Data and method</h2>
+    <ul class="src">
+      <li><b>Fire:</b> NASA FIRMS MODIS C6.1 + VIIRS C2, 392.6 M detections, unified to VIIRS-equivalent counts (Ember Atlas harmonization), 1° monthly cells, 2002–2025.</li>
+      <li><b>Wind:</b> NASA POWER (MERRA-2) wind at 10 m: monthly mean (WS10M) and strongest daily maximum (WS10M_MAX), 2000–2026, on a 2° grid.</li>
+      <li><b>Dryness and heat:</b> NASA POWER humidity, rain, max temperature, root-zone soil moisture.</li>
+      <li><b>Forest:</b> ESA WorldCover 2021 (10 m) tree share per cell; Hansen/UMD Global Forest Change v1.12 yearly tree-cover loss 2001–2024 (sampled every 300 m–1.2 km).</li>
+      <li><b>Greenness:</b> NASA MODIS NDVI monthly (via NASA GIBS).</li>
+    </ul>
+    <p class="muted">Anomalies are z-scores against each cell’s own calendar-month normal, so the regular fire season does not count as “wind effect”. Sections 1–3 describe association in the same month; they show what goes together, not proof of cause. Section 4 is a true forecast test with a time split. Cells are 1° (about 100 km), so local wind gusts and small fires are averaged out; the effects are regional.</p>
+    <details><summary>All numbers (table view)</summary><div class="tablewrap"><table id="tb-all"></table></div></details>
+  </section>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+const DATA = __DATA__;
+const $ = (s) => document.querySelector(s);
+const NS = "http://www.w3.org/2000/svg";
+const el = (t, a = {}, p) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmtX = (v) => (v == null ? "–" : v.toFixed(2) + "×");
+const pct = (v, d = 1) => (v * 100).toFixed(d) + "%";
+const tip = $("#tip");
+function showTip(html, e) { tip.innerHTML = html; tip.hidden = false; const r = tip.getBoundingClientRect(); let x = e.clientX + 14, y = e.clientY + 14; if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14; if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14; tip.style.left = Math.max(8, x) + "px"; tip.style.top = Math.max(8, y) + "px"; }
+function hideTip() { tip.hidden = true; }
+const LAND = DATA.land_types.map((l) => l.group);
+const SER = ["--s1", "--s2", "--s3"];
+const short = (g) => g.split(" (")[0];
+
+// ---------- header
+(function header() {
+  const D = DATA, X = (g, c) => D.wind_x_dry.find((r) => r.group === g && r.case === c);
+  const forest = LAND[2], open = LAND[0];
+  const fwd = X(forest, "windy AND dry"), fd = X(forest, "dry only"), owd = X(open, "windy AND dry"), od = X(open, "dry only");
+  const lc = (D.loss_cum || []).at(-1);
+  const A = D.ablation, base = A && A.runs[0], fin = A && A.runs.find((r) => r.label.startsWith("final"));
+  $("#lede").textContent = `We combined 25 years of unified satellite fire records with NASA wind data and two forest maps: ${D.n_cells.toLocaleString("en")} fire-prone 1° cells, ${D.n_cell_months.toLocaleString("en")} cell-months. Here is what changes when the wind picks up, and whether that helps a forecast.`;
+  const tiles = [
+    fwd && { v: fmtX(fwd.lift), k: `chance of big fire in a forest month that is windy and dry, vs an average forest month (dry alone: ${fmtX(fd.lift)})` },
+    owd && { v: fmtX(owd.lift), k: `the same in open land (grass, crops, shrubs); dry alone: ${fmtX(od.lift)}. Wind adds less here.` },
+    lc && { v: fmtX(lc.lift), k: `big-fire chance in tree-covered cells that lost ${lc.bin.replace(" lost since 2001", "")} of their trees since 2001` },
+    fin && { v: "+" + ((fin.test.unusual_ap / base.test.unusual_ap - 1) * 100).toFixed(0) + "%", k: `forecast precision on unusual fires with the new inputs, tested on 2023–2025 (${base.test.unusual_ap.toFixed(3)} → ${fin.test.unusual_ap.toFixed(3)})` },
+  ].filter(Boolean);
+  $("#tiles").innerHTML = tiles.map((t) => `<div class="tile"><div class="v">${t.v}</div><div class="k">${t.k}</div></div>`).join("");
+})();
+
+// ---------- generic dot + CI chart over categories (x) for several series
+function dotChart(svg, { cats, series, yMin, yMax, ref = 1, yFmt = (v) => v.toFixed(1) + "×", h = 300 }) {
+  const W = 760, m = { l: 48, r: 12, t: 12, b: 40 };
+  svg.setAttribute("viewBox", `0 0 ${W} ${h}`);
+  svg.innerHTML = "";
+  const x0 = m.l, x1 = W - m.r, band = (x1 - x0) / cats.length;
+  const y = (v) => h - m.b - ((v - yMin) / (yMax - yMin)) * (h - m.t - m.b);
+  const ticks = []; const step = (yMax - yMin) > 2 ? 0.5 : 0.25;
+  for (let v = Math.ceil(yMin / step) * step; v <= yMax + 1e-9; v += step) ticks.push(+v.toFixed(2));
+  for (const v of ticks) { el("line", { x1: x0, x2: x1, y1: y(v), y2: y(v), stroke: css("--grid"), "stroke-width": 1 }, svg); el("text", { x: x0 - 8, y: y(v) + 4, "text-anchor": "end" }, svg).textContent = yFmt(v); }
+  el("line", { x1: x0, x2: x1, y1: y(ref), y2: y(ref), stroke: css("--fg-3"), "stroke-width": 1.5, "stroke-dasharray": "5 4" }, svg);
+  cats.forEach((c, i) => { el("text", { x: x0 + band * (i + 0.5), y: h - m.b + 22, "text-anchor": "middle", class: "lab" }, svg).textContent = c; });
+  const n = series.length, off = (k) => (k - (n - 1) / 2) * Math.min(22, band / (n + 1));
+  series.forEach((s, k) => {
+    const col = css(s.color);
+    const pts = [];
+    s.values.forEach((d, i) => {
+      if (!d) return;
+      const cx = x0 + band * (i + 0.5) + off(k);
+      pts.push([cx, y(d.v)]);
+      if (d.lo != null) el("line", { x1: cx, x2: cx, y1: y(Math.max(yMin, d.lo)), y2: y(Math.min(yMax, d.hi)), stroke: col, "stroke-width": 2, "stroke-linecap": "round", opacity: 0.55 }, svg);
+    });
+    if (pts.length > 1) el("polyline", { points: pts.map((p) => p.join(",")).join(" "), fill: "none", stroke: col, "stroke-width": 2, opacity: 0.35 }, svg);
+    s.values.forEach((d, i) => {
+      if (!d) return;
+      const cx = x0 + band * (i + 0.5) + off(k);
+      el("circle", { cx, cy: y(d.v), r: 5.5, fill: col, stroke: css("--surface"), "stroke-width": 2 }, svg);
+      const hit = el("circle", { cx, cy: y(d.v), r: 14, fill: "transparent", tabindex: 0 }, svg);
+      hit.addEventListener("pointermove", (e) => showTip(d.tip, e)); hit.addEventListener("pointerleave", hideTip);
+    });
+  });
+}
+
+// ---------- 1 wind by land
+(function windChart() {
+  const bins = ["much calmer", "calmer", "a bit windier", "windy", "very windy"];
+  const rows = DATA.wind_by_land;
+  const vals = rows.flatMap((r) => [r.lift_ci[0], r.lift_ci[1]]);
+  const series = LAND.map((g, k) => ({
+    name: g, color: SER[k],
+    values: bins.map((b) => { const r = rows.find((q) => q.group === g && q.bin === b); return r && { v: r.lift, lo: r.lift_ci[0], hi: r.lift_ci[1], tip: `<b>${short(g)} · ${b}</b><br>big-fire chance ${pct(r.rate)} (${pct(r.ci[0])}–${pct(r.ci[1])})<br>${fmtX(r.lift)} vs normal · ${r.n.toLocaleString("en")} cell-months<br>detections ${fmtX(r.det_ratio)} the land-type average` }; }),
+  }));
+  $("#lg-wind").innerHTML = series.map((s) => `<span><i style="background:var(${s.color})"></i>${s.name}</span>`).join("") + `<span><i class="line"></i>no difference (1.0×)</span>`;
+  dotChart($("#ch-wind"), { cats: ["< −1 σ", "−1 to 0", "0 to +1", "+1 to +2", "> +2 σ"], series, yMin: Math.min(0.5, Math.floor(Math.min(...vals) * 4) / 4), yMax: Math.max(1.5, Math.ceil(Math.max(...vals) * 4) / 4) });
+  const c = DATA.wind_corr.map((r) => `${short(r.group).toLowerCase()} ${r.spearman >= 0 ? "+" : ""}${r.spearman.toFixed(2)}`).join(", ");
+  $("#note-wind").textContent = `x-axis: strongest wind of the month vs the cell’s normal for that month, in standard deviations (σ). Rank correlation of wind anomaly with the number of detections: ${c}. On its own, wind barely moves the chance of fire; the stormiest months (> +2σ) even have less, because they often bring rain. Section 2 shows where wind does matter.`;
+})();
+
+// ---------- 2 wind x dry
+(function dryGrid() {
+  const cases = { "calm & humid": [0, 0], "windy only": [0, 1], "dry only": [1, 0], "windy AND dry": [1, 1] };
+  const col = (l) => { if (l == null) return "transparent"; const t = Math.max(-1, Math.min(1, Math.log2(l) / 1.2)); return t >= 0 ? `color-mix(in oklab, var(--warm) ${Math.round(t * 85)}%, var(--surface))` : `color-mix(in oklab, var(--cool) ${Math.round(-t * 85)}%, var(--surface))`; };
+  $("#mx-dry").innerHTML = LAND.map((g) => {
+    const r = (c) => DATA.wind_x_dry.find((q) => q.group === g && q.case === c);
+    const cell = (c) => { const q = r(c); return `<div class="c" style="background:${col(q?.lift)}" title="${c}: ${q ? pct(q.rate) + ' big-fire chance, ' + q.n.toLocaleString('en') + ' cell-months' : 'no data'}">${q?.lift != null ? fmtX(q.lift) : "–"}<small>${q ? pct(q.rate, 0) + " · n " + q.n.toLocaleString("en") : ""}</small></div>`; };
+    return `<div class="chart"><h3 style="margin-bottom:10px">${g}</h3><div class="grid2"><span></span><span class="h">calm</span><span class="h">windy</span>
+      <span class="r">humid</span>${cell("calm & humid")}${cell("windy only")}
+      <span class="r">dry</span>${cell("dry only")}${cell("windy AND dry")}</div></div>`;
+  }).join("");
+  $("#note-dry").textContent = "Big number = chance of big fire vs all months of that land type (1.0× = average). Small text = the actual chance and number of cell-months. Red = more fire than usual, blue = less.";
+})();
+
+// ---------- 3 forest loss
+(function lossChart() {
+  const L = DATA.loss_last_year || [];
+  if (!L.length) { $("#ch-loss").replaceWith(Object.assign(document.createElement("p"), { textContent: "Forest-loss data not available." })); return; }
+  const vals = L.flatMap((r) => [r.ci[0] / (r.rate / r.lift), r.ci[1] / (r.rate / r.lift)]);
+  dotChart($("#ch-loss"), {
+    cats: L.map((r) => r.bin), h: 260,
+    series: [{ name: "fire", color: "--s2", values: L.map((r) => ({ v: r.lift, lo: r.ci[0] / (r.rate / r.lift), hi: r.ci[1] / (r.rate / r.lift), tip: `<b>${r.bin}</b><br>big-fire chance ${pct(r.rate)} (${pct(r.ci[0])}–${pct(r.ci[1])})<br>${fmtX(r.lift)} vs all tree-covered cell-years · ${r.n.toLocaleString("en")} cell-years` })) }],
+    yMin: Math.min(0.5, Math.floor(Math.min(...vals) * 4) / 4), yMax: Math.max(1.5, Math.ceil(Math.max(...vals) * 4) / 4),
+  });
+  const C = DATA.loss_cum || [];
+  $("#note-loss").textContent = C.length ? `Long-term view, all forest lost since 2001: ${C.map((r) => `${r.bin} → ${fmtX(r.lift)}`).join(" · ")}.` : "";
+})();
+
+// ---------- 4 ablation
+(function ablation() {
+  const A = DATA.ablation;
+  const tb = $("#tb-abl");
+  if (!A) { tb.innerHTML = "<tr><td>Ablation results not available.</td></tr>"; return; }
+  const base = A.runs[0];
+  tb.innerHTML = `<tr><th>Model inputs</th><th>Unusual fires: precision (AP)</th><th>vs base</th><th>Unusual fires: ROC-AUC</th><th>All: ROC-AUC</th></tr>` +
+    A.runs.map((r) => { const d = (r.test.unusual_ap / base.test.unusual_ap - 1) * 100; return `<tr class="${r.label.startsWith("final") ? "hl" : ""}"><td>${r.label}</td><td>${r.test.unusual_ap.toFixed(3)}</td><td>${r === base ? "–" : (d >= 0 ? "+" : "") + d.toFixed(1) + "%"}</td><td>${r.test.unusual_auc.toFixed(3)}</td><td>${r.test.auc.toFixed(3)}</td></tr>`; }).join("");
+  $("#note-abl").textContent = A.note;
+})();
+
+// ---------- 5 shap share + wind push
+(function shap() {
+  const S = Object.entries(DATA.shap_share);
+  const names = { history: "Fire history", analog: "Weather analogs", weather: "Weather (heat, rain, humidity, mean wind, soil)", season_loc: "Season & location", landcover: "Land cover (tree share etc.)", forest: "Forest loss", wind: "Strong wind (10 m max)", wind_x_forest: "Wind × forest" };
+  const svg = $("#ch-shap"), W = 760, rowH = 34, h = S.length * rowH + 10, lab = 300;
+  svg.setAttribute("viewBox", `0 0 ${W} ${h}`);
+  const max = Math.max(...S.map((s) => s[1]));
+  S.forEach(([k, v], i) => {
+    const y = 6 + i * rowH, w = ((W - lab - 60) * v) / max, hot = k.startsWith("wind") || k === "forest" || k === "landcover";
+    el("text", { x: lab - 10, y: y + 18, "text-anchor": "end", class: "lab" }, svg).textContent = names[k] || k;
+    el("rect", { x: lab, y: y + 4, width: Math.max(2, w), height: 20, rx: 4, fill: hot ? css("--s2") : css("--neutral") }, svg);
+    el("text", { x: lab + w + 8, y: y + 18, class: "val" }, svg).textContent = v.toFixed(1) + "%";
+  });
+  const bins = ["much calmer", "calmer", "a bit windier", "windy", "very windy"];
+  const P = DATA.wind_push;
+  const series = LAND.map((g, k) => ({ name: g, color: SER[k], values: bins.map((b) => { const r = P.find((q) => q.group === g && q.bin === b); return r && { v: r.odds_x, tip: `<b>${short(g)} · last month ${b}</b><br>wind inputs multiply the predicted odds by ${fmtX(r.odds_x)}<br>${r.n.toLocaleString("en")} test cell-months` }; }) }));
+  const vals = P.map((r) => r.odds_x);
+  $("#lg-push").innerHTML = series.map((s) => `<span><i style="background:var(${s.color})"></i>${s.name}</span>`).join("");
+  dotChart($("#ch-push"), { cats: ["< −1 σ", "−1 to 0", "0 to +1", "+1 to +2", "> +2 σ"], series, h: 260, yMin: Math.min(0.75, Math.floor(Math.min(...vals) * 10) / 10), yMax: Math.max(1.25, Math.ceil(Math.max(...vals) * 10) / 10) });
+})();
+
+$("#concl").innerHTML = DATA.conclusion;
+
+// ---------- table view
+(function all() {
+  const r = [];
+  DATA.wind_by_land.forEach((q) => r.push(["Wind", q.group, q.bin, pct(q.rate), fmtX(q.lift), q.n]));
+  DATA.wind_x_dry.forEach((q) => r.push(["Wind × dry", q.group, q.case, q.rate != null ? pct(q.rate) : "–", fmtX(q.lift), q.n]));
+  (DATA.loss_last_year || []).forEach((q) => r.push(["Forest loss last year", "≥10% trees", q.bin, pct(q.rate), fmtX(q.lift), q.n]));
+  (DATA.loss_cum || []).forEach((q) => r.push(["Forest loss since 2001", "≥10% trees", q.bin, pct(q.rate), fmtX(q.lift), q.n]));
+  $("#tb-all").innerHTML = `<tr><th>Test</th><th>Land</th><th>Case</th><th>Big-fire chance</th><th>vs normal</th><th>n</th></tr>` + r.map((x) => `<tr>${x.map((v) => `<td>${typeof v === "number" ? v.toLocaleString("en") : v}</td>`).join("")}</tr>`).join("");
+})();
+
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => location.reload());
+</script>

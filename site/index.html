@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Ember Atlas</title>
+  <meta name="description" content="25 years of MODIS and VIIRS fire detections unified into one consistent record, live fires, and an AI fire-risk forecast on a 3D globe." />
+  <meta name="theme-color" content="#07090d" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 3c2 6 9 9 9 17a9 9 0 0 1-18 0c0-5 3-7 4-11 1 3 2 4 3 5 1-4 2-7 2-11z' fill='%23f08a24'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <canvas id="globe" aria-label="3D globe of fire activity"></canvas>
+
+  <div id="loader" class="loader">
+    <div class="loader-mark"></div>
+    <div class="loader-text">Loading 25 years of fire data…</div>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><path d="M16 3c2 6 9 9 9 17a9 9 0 0 1-18 0c0-5 3-7 4-11 1 3 2 4 3 5 1-4 2-7 2-11z" fill="var(--ember)"/></svg>
+      <div>
+        <div class="brand-name">Ember Atlas</div>
+        <div class="brand-sub">MODIS + VIIRS · one fire record</div>
+      </div>
+    </div>
+    <nav class="modes" role="tablist" aria-label="View mode">
+      <button role="tab" data-mode="history" aria-selected="true">History</button>
+      <button role="tab" data-mode="calendar" aria-selected="false">Fire Calendar</button>
+      <button role="tab" data-mode="live" aria-selected="false"><span class="live-dot"></span>Live</button>
+      <button role="tab" data-mode="forecast" aria-selected="false">AI Forecast</button>
+    </nav>
+    <div class="top-actions">
+      <button class="icon-btn" id="btn-about" title="About the method" aria-label="About the method">
+        <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <aside id="panel" class="panel" aria-live="polite">
+    <button class="panel-handle" id="panel-handle" aria-label="Toggle panel"></button>
+    <div id="panel-body"></div>
+  </aside>
+
+  <section id="cell" class="cell-card hidden" aria-label="Selected location">
+    <button class="icon-btn close" id="cell-close" aria-label="Close">
+      <svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <div id="cell-body"></div>
+  </section>
+
+  <footer id="timeline" class="timeline">
+    <button id="play" class="play" aria-label="Play">
+      <svg viewBox="0 0 24 24" width="18" height="18"><path id="play-icon" d="M8 5v14l11-7z" fill="currentColor"/></svg>
+    </button>
+    <div class="tl-main">
+      <div class="tl-head">
+        <span id="tl-label" class="tl-label">2025</span>
+        <div class="seg small" role="group" aria-label="Time step">
+          <button data-step="year" aria-pressed="true">Year</button>
+          <button data-step="month" aria-pressed="false">Month</button>
+        </div>
+        <div class="seg small" role="group" aria-label="Dataset">
+          <button data-src="harm" aria-pressed="true" title="MODIS calibrated to VIIRS-equivalent before 2012">Unified</button>
+          <button data-src="raw" aria-pressed="false" title="Whatever sensor was available, uncalibrated">Raw</button>
+        </div>
+      </div>
+      <div class="tl-track">
+        <svg id="tl-spark" preserveAspectRatio="none"></svg>
+        <input id="tl-range" type="range" min="0" max="0" value="0" aria-label="Time" />
+      </div>
+    </div>
+  </footer>
+
+  <div id="tooltip" class="tooltip hidden"></div>
+
+  <dialog id="about" class="about">
+    <div id="about-body"></div>
+    <form method="dialog"><button class="btn">Close</button></form>
+  </dialog>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
