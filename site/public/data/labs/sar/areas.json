@@ -1,0 +1,298 @@
+{
+ "source": "NASA-ISRO NISAR L2 GCOV (L-band, 20 MHz dual-pol HH+HV), via ASF DAAC",
+ "mode": "browse",
+ "note": "Public GCOV browse images (8-bit display stretch, about 25 dB range). Relative changes are reliable; absolute dB needs the full product (Earthdata login).",
+ "areas": [
+  {
+   "id": "savanna",
+   "name": "Savanna fires · Central Africa",
+   "place": "CAR / South Sudan border",
+   "kind": "fire",
+   "driver": "Late-season grass fires. L-band HV comes mostly from volume scattering in leaves, grass and branches. As the savanna dries after the rains and then burns, that volume disappears, so HV drops and burn scars turn dark. HH, which also sees the ground and stems, changes less.",
+   "look": "Watch the green (HV) fade from August (wet season, lush grass) to November (dry, burning). FIRMS fires this week cluster where the darkening is strongest.",
+   "path": 115,
+   "frame": 6,
+   "bounds": [
+    25.1887,
+    8.1405,
+    26.5887,
+    9.5405
+   ],
+   "size": [
+    720,
+    720
+   ],
+   "dates": [
+    {
+     "date": "20260821",
+     "product": "NISAR_L2_PR_GCOV_028_115_A_006_2005_DHDH_A_20260821T035145_20260821T035219_P05023_N_F_J_001",
+     "direction": "ASCENDING",
+     "hh": 172.7,
+     "hv": 167.5,
+     "valid": 0.997
+    },
+    {
+     "date": "20260902",
+     "product": "NISAR_L2_PR_GCOV_029_115_A_006_2005_DHDH_A_20260902T035145_20260902T035219_P05023_N_F_J_001",
+     "direction": "ASCENDING",
+     "hh": 173.1,
+     "hv": 170.3,
+     "valid": 0.997
+    },
+    {
+     "date": "20260914",
+     "product": "NISAR_L2_PR_GCOV_030_115_A_006_2005_DHDH_A_20260914T035145_20260914T035219_P05023_N_F_J_001",
+     "direction": "ASCENDING",
+     "hh": 182.8,
+     "hv": 174.7,
+     "valid": 0.997
+    },
+    {
+     "date": "20260926",
+     "product": "NISAR_L2_PR_GCOV_031_115_A_006_2005_DHDH_A_20260926T035145_20260926T035219_P05023_N_F_J_001",
+     "direction": "ASCENDING",
+     "hh": 172.8,
+     "hv": 167.1,
+     "valid": 0.998
+    },
+    {
+     "date": "20261008",
+     "product": "NISAR_L2_PR_GCOV_032_115_A_006_2005_DHDH_A_20261008T035145_20261008T035219_P05023_N_F_J_001",
+     "direction": "ASCENDING",
+     "hh": 174.0,
+     "hv": 168.1,
+     "valid": 0.998
+    },
+    {
+     "date": "20261020",
+     "product": "NISAR_L2_PR_GCOV_033_115_A_006_2005_DHDH_A_20261020T035145_20261020T035219_P05023_N_F_J_001",
+     "direction": "ASCENDING",
+     "hh": 161.1,
+     "hv": 163.2,
+     "valid": 0.998
+    },
+    {
+     "date": "20261101",
+     "product": "NISAR_L2_PR_GCOV_034_115_A_006_2005_DHDH_A_20261101T035145_20261101T035220_P05036_N_F_J_001",
+     "direction": "ASCENDING",
+     "hh": 171.8,
+     "hv": 170.6,
+     "valid": 0.997
+    }
+   ],
+   "change": {
+    "drop": 0.089,
+    "rise": 0.104
+   },
+   "polarization": "HH + HV",
+   "track": "path 115, frame 6, ascending",
+   "fires": 6675,
+   "fire_series": [
+    {
+     "date": "20260821",
+     "fire_hv": 0.82,
+     "other_hv": -0.46
+    },
+    {
+     "date": "20260902",
+     "fire_hv": 0.29,
+     "other_hv": -0.61
+    },
+    {
+     "date": "20260914",
+     "fire_hv": 0.74,
+     "other_hv": -0.55
+    },
+    {
+     "date": "20260926",
+     "fire_hv": 0.8,
+     "other_hv": -0.86
+    },
+    {
+     "date": "20261008",
+     "fire_hv": 1.08,
+     "other_hv": -0.74
+    },
+    {
+     "date": "20261020",
+     "fire_hv": 0.92,
+     "other_hv": -0.43
+    },
+    {
+     "date": "20261101",
+     "fire_hv": 0.71,
+     "other_hv": -0.37
+    }
+   ],
+   "fire_share": 0.421
+  },
+  {
+   "id": "syrdarya",
+   "name": "Cotton & wheat fields · Uzbekistan",
+   "place": "Syrdarya / Jizzakh (Mirzachul steppe)",
+   "kind": "farming",
+   "driver": "Irrigated farming. Tall cotton canopies in August scatter strongly in HV; harvest in September–October removes them, and ploughing and winter-wheat sowing change the surface roughness. Each field flips on its own date, so the change map looks like a patchwork. Wet, freshly irrigated soil raises HH (higher dielectric constant).",
+   "look": "Fields switch from green (crop canopy) to dark or purple (bare, rough soil) one by one between August and November.",
+   "path": 121,
+   "frame": 68,
+   "bounds": [
+    67.1962,
+    39.8861,
+    68.5962,
+    41.2861
+   ],
+   "size": [
+    720,
+    720
+   ],
+   "dates": [
+    {
+     "date": "20260821",
+     "product": "NISAR_L2_PR_GCOV_028_121_D_068_2005_DHDH_A_20260821T142623_20260821T142658_P05023_N_F_J_001",
+     "direction": "DESCENDING",
+     "hh": 89.8,
+     "hv": 85.4,
+     "valid": 0.999
+    },
+    {
+     "date": "20260902",
+     "product": "NISAR_L2_PR_GCOV_029_121_D_068_2005_DHDH_A_20260902T142623_20260902T142658_P05023_N_F_J_001",
+     "direction": "DESCENDING",
+     "hh": 87.9,
+     "hv": 84.9,
+     "valid": 1.0
+    },
+    {
+     "date": "20260914",
+     "product": "NISAR_L2_PR_GCOV_030_121_D_068_2005_DHDH_A_20260914T142622_20260914T142657_P05023_N_F_J_001",
+     "direction": "DESCENDING",
+     "hh": 93.3,
+     "hv": 90.0,
+     "valid": 1.0
+    },
+    {
+     "date": "20260926",
+     "product": "NISAR_L2_PR_GCOV_031_121_D_068_2005_DHDH_A_20260926T142623_20260926T142657_P05023_N_F_J_001",
+     "direction": "DESCENDING",
+     "hh": 84.6,
+     "hv": 85.2,
+     "valid": 1.0
+    },
+    {
+     "date": "20261008",
+     "product": "NISAR_L2_PR_GCOV_032_121_D_068_2005_DHDH_A_20261008T142623_20261008T142657_P05023_N_F_J_001",
+     "direction": "DESCENDING",
+     "hh": 86.3,
+     "hv": 83.7,
+     "valid": 1.0
+    },
+    {
+     "date": "20261020",
+     "product": "NISAR_L2_PR_GCOV_033_121_D_068_2005_DHDH_A_20261020T142623_20261020T142658_P05023_N_F_J_001",
+     "direction": "DESCENDING",
+     "hh": 81.5,
+     "hv": 78.3,
+     "valid": 1.0
+    },
+    {
+     "date": "20261101",
+     "product": "NISAR_L2_PR_GCOV_034_121_D_068_2005_DHDH_A_20261101T142623_20261101T142658_P05036_F_F_J_001",
+     "direction": "DESCENDING",
+     "hh": 85.3,
+     "hv": 80.3,
+     "valid": 1.0
+    }
+   ],
+   "change": {
+    "drop": 0.321,
+    "rise": 0.19
+   },
+   "polarization": "HH + HV",
+   "track": "path 121, frame 68, descending"
+  },
+  {
+   "id": "aral",
+   "name": "Aral Sea & Amu Darya delta",
+   "place": "Karakalpakstan, Uzbekistan",
+   "kind": "water",
+   "driver": "Water and wetlands. Calm open water reflects the radar away (specular), so it is almost black. Wind roughens the surface and brightens it; reed beds in the delta give strong HV; the dried sea floor (Aralkum) is bright where it is rough or salty-wet. Changes between dates show shifting shallow water, wind and wet salt flats.",
+   "look": "Dark = calm water. Bright patches on the lake are wind; the bright green fringe in the delta is reeds and wetlands.",
+   "path": 107,
+   "frame": 66,
+   "bounds": [
+    58.5552,
+    43.8269,
+    59.9552,
+    45.2269
+   ],
+   "size": [
+    720,
+    720
+   ],
+   "dates": [
+    {
+     "date": "20260820",
+     "product": "NISAR_L2_PR_GCOV_028_107_D_066_2005_DHDH_A_20260820T150652_20260820T150727_P05023_N_F_J_001",
+     "direction": "DESCENDING",
+     "hh": 157.1,
+     "hv": 171.9,
+     "valid": 1.0
+    },
+    {
+     "date": "20260901",
+     "product": "NISAR_L2_PR_GCOV_029_107_D_066_2005_DHDH_A_20260901T150652_20260901T150727_P05023_N_F_J_001",
+     "direction": "DESCENDING",
+     "hh": 153.3,
+     "hv": 164.7,
+     "valid": 1.0
+    },
+    {
+     "date": "20260913",
+     "product": "NISAR_L2_PR_GCOV_030_107_D_066_2005_DHDH_A_20260913T150652_20260913T150727_P05023_N_F_J_001",
+     "direction": "DESCENDING",
+     "hh": 156.5,
+     "hv": 166.6,
+     "valid": 1.0
+    },
+    {
+     "date": "20260925",
+     "product": "NISAR_L2_PR_GCOV_031_107_D_066_2005_SHSH_A_20260925T150652_20260925T150727_P05023_N_F_J_001",
+     "direction": "DESCENDING",
+     "hh": 154.6,
+     "hv": 154.6,
+     "valid": 1.0
+    },
+    {
+     "date": "20261007",
+     "product": "NISAR_L2_PR_GCOV_032_107_D_066_2005_DHDH_A_20261007T150652_20261007T150727_P05023_N_F_J_001",
+     "direction": "DESCENDING",
+     "hh": 154.5,
+     "hv": 162.0,
+     "valid": 1.0
+    },
+    {
+     "date": "20261019",
+     "product": "NISAR_L2_PR_GCOV_033_107_D_066_2005_DHDH_A_20261019T150652_20261019T150727_P05023_N_F_J_001",
+     "direction": "DESCENDING",
+     "hh": 152.2,
+     "hv": 164.3,
+     "valid": 1.0
+    },
+    {
+     "date": "20261031",
+     "product": "NISAR_L2_PR_GCOV_034_107_D_066_2005_DHDH_A_20261031T150652_20261031T150727_P05036_N_F_J_001",
+     "direction": "DESCENDING",
+     "hh": 154.4,
+     "hv": 169.3,
+     "valid": 1.0
+    }
+   ],
+   "change": {
+    "drop": 0.193,
+    "rise": 0.266
+   },
+   "polarization": "HH + HV",
+   "track": "path 107, frame 66, descending"
+  }
+ ]
+}

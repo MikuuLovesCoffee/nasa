@@ -3,8 +3,9 @@ import { Globe, RAMPS } from "./globe.js";
 import { lineChart, barChart, sparkline, fmt, showTip, hideTip } from "./charts.js";
 import {
   loadMeta, loadHistory, aggregate, loadCell, loadForecast, loadLive, LIVE_SOURCES,
-  cell05ToLatLon, cell1ToLatLon, latLonToCell1, latLonToCell05, ymLabel, COLS05,
+  cell05ToLatLon, cell1ToLatLon, latLonToCell1, latLonToCell05, ymLabel, COLS05, dataVersion,
 } from "./data.js";
+import { LABS } from "./labs/registry.js";
 import { placeAt, regionsInSquare } from "./places.js";
 import { MON, areaIndex, resolveArea, areaWeights, areaSeries, areaKm2, analyse, runLabel, cellColor, HEAT, DIV, toCSV, provKey } from "./calendar.js";
 import {
@@ -34,7 +35,7 @@ const pct = (p) => `${Math.round(p * 100)}%`;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const prettyCountry = (s) => (s || "").replace(/_/g, " ");
 
-const state = { mode: "history", step: "year", src: "harm", idx: 0, playing: false, current: null, live: null, liveRange: "24h", liveColor: "unified", liveFilter: readLiveFilter(), fcMonth: 1, fcOverlay: false, smoke: "off", aoi: readAoiParam(), calColor: "activity", pick: "province", boxStart: null, calMonth: null, fcAoi: null, fcPick: "cell", fcBoxStart: null, fcA: null };
+const state = { mode: "history", step: "year", src: "harm", idx: 0, playing: false, current: null, live: null, liveRange: "24h", liveColor: "unified", liveFilter: readLiveFilter(), fcMonth: 1, fcOverlay: false, smoke: "off", aoi: readAoiParam(), calColor: "activity", pick: "province", boxStart: null, calMonth: null, fcAoi: null, fcPick: "cell", fcBoxStart: null, fcA: null, lab: null, labId: null, prevMode: "history" };
 let globe, meta, hist, forecast;
 
 // ---------------------------------------------------------------- boot
@@ -62,8 +63,10 @@ async function boot() {
   setStep("year", true);
   state.idx = meta.years.length - 1;
   const qm = new URLSearchParams(location.search).get("mode");
+  const ql = new URLSearchParams(location.search).get("lab");
   if (qm === "forecast" && state.aoi) state.fcAoi = state.aoi;
-  setMode(["history", "calendar", "live", "forecast"].includes(qm) ? qm : state.aoi ? "calendar" : "history");
+  if (ql && LABS.some((l) => l.id === ql && l.load)) { const lp = new URLSearchParams(location.search); state.aoi = null; setMode("history"); openLab(ql, lp); }
+  else setMode(["history", "calendar", "live", "forecast"].includes(qm) ? qm : state.aoi ? "calendar" : "history");
   $("#loader").classList.add("done");
 }
 
@@ -86,6 +89,7 @@ function bindUI() {
   $("#cell-close").addEventListener("click", closeCell);
   $("#panel-handle").addEventListener("click", () => $("#panel").classList.toggle("open"));
   $("#btn-about").addEventListener("click", openAbout);
+  $("#labs-btn").addEventListener("click", openLabsMenu);
   window.addEventListener("keydown", (e) => {
     if (e.target.tagName === "INPUT" && e.target.type !== "range") return;
     if (e.key === "Escape") closeCell();
@@ -99,6 +103,7 @@ function bindUI() {
   });
   globe.on("click", (ll) => {
     if (!ll) return;
+    if (state.mode === "lab") { state.lab?.onClick?.(ll); return; }
     if (state.mode === "calendar") calendarClick(ll);
     else if (state.mode === "forecast" && state.fcPick !== "cell") forecastClick(ll);
     else openCell(ll.lat, ll.lon);
@@ -107,7 +112,9 @@ function bindUI() {
 }
 
 function setMode(mode) {
+  if (state.lab) leaveLab();
   state.mode = mode;
+  document.body.classList.remove("in-lab");
   document.querySelectorAll(".modes button").forEach((b) => b.setAttribute("aria-selected", b.dataset.mode === mode));
   stopPlay();
   globe.hideAll();
@@ -167,6 +174,7 @@ function stopPlay() {
 
 // ---------------------------------------------------------------- hover
 function onHover(ll, e) {
+  if (state.mode === "lab") { if (state.lab?.onHover) state.lab.onHover(ll, e); else hideTip(); return; }
   if (!ll) { hideTip(); return; }
   let html = null;
   if (state.mode === "history" && state.current) {
@@ -285,6 +293,73 @@ function historyPanel(agg) {
 
 function yearTable() {
   return `<table class="data"><tr><th>Year</th><th>Unified</th><th>MODIS</th><th>VIIRS</th></tr>${meta.years.map((y, i) => `<tr><td>${y}</td><td>${fmt(meta.global.harmYear[i])}</td><td>${fmt(meta.global.modisYear[i])}</td><td>${meta.global.viirsYear[i] ? fmt(meta.global.viirsYear[i]) : "–"}</td></tr>`).join("")}</table>`;
+}
+
+// ---------------------------------------------------------------- LABS ("wanna see cool shiyt")
+// Mini-apps for other Space Apps challenges. Each lab is its own code chunk, loaded on demand; it
+// borrows the globe and the side panel and gives them back on exit.
+function openLabsMenu() {
+  const d = $("#labs");
+  $("#labs-body").innerHTML = `
+    <p class="eyebrow">Labs · other NASA Space Apps 2026 challenges</p>
+    <h2>Wanna see cool shiyt?</h2>
+    <p class="lede small">Six mini-apps built on the same globe. The fire atlas stays exactly as it is; a lab only loads when you open it.</p>
+    <div class="lab-grid">${LABS.map((l) => `
+      <button class="lab-card" data-lab="${l.id}" ${l.load ? "" : "disabled"}>
+        <span class="lab-level ${l.level.toLowerCase()}">${l.level}</span>
+        <b>${esc(l.title)}</b>
+        <span>${esc(l.blurb)}</span>
+        <i>${l.load ? "Open →" : "Coming soon"}</i>
+      </button>`).join("")}</div>`;
+  d.querySelectorAll("[data-lab]").forEach((b) => b.addEventListener("click", () => { d.close(); openLab(b.dataset.lab); }));
+  d.showModal();
+}
+
+function labParams(p) {
+  try {
+    const u = new URL(location.href);
+    for (const k of [...u.searchParams.keys()]) if (!["lab", "v"].includes(k)) u.searchParams.delete(k);
+    u.searchParams.set("lab", state.labId);
+    for (const [k, v] of Object.entries(p || {})) if (v != null && v !== "") u.searchParams.set(k, v); else u.searchParams.delete(k);
+    history.replaceState(null, "", u);
+  } catch {}
+}
+
+async function openLab(id, initParams) {
+  const def = LABS.find((l) => l.id === id);
+  if (!def?.load) return;
+  if (state.lab) leaveLab();
+  if (state.mode !== "lab") state.prevMode = state.mode;
+  stopPlay(); closeCell(); hideTip();
+  globe.hideAll(); globe.setOutline(null); globe.setMarker(null);
+  state.mode = "lab"; state.labId = id;
+  document.body.classList.add("in-lab");
+  document.querySelectorAll(".modes button").forEach((b) => b.setAttribute("aria-selected", "false"));
+  $("#timeline").classList.add("hidden");
+  $("#panel").classList.add("wide", "open");
+  $("#panel-body").innerHTML = `<p class="eyebrow">Labs</p><h2>Loading ${esc(def.title)}…</h2>`;
+  const params = initParams || new URLSearchParams();
+  labParams({});
+  const mod = (await def.load()).default;
+  if (state.labId !== id) return;
+  state.lab = mod;
+  await mod.enter({
+    globe, blend: { normal: THREE.NormalBlending, additive: THREE.AdditiveBlending }, panel: $("#panel-body"), meta, hist, forecast, v: dataVersion(),
+    h: { fmt, esc, showTip, hideTip, ymLabel, prettyCountry },
+    area: { areaIndex, resolveArea, areaWeights, areaKm2, placeAt, provKey },
+    setParams: labParams,
+    liveFires: async () => { if (!state.live) state.live = await loadLive(state.liveRange); return state.live.firesUnified; },
+    back: () => setMode(state.prevMode || "history"),
+  }, params);
+}
+
+function leaveLab() {
+  try { state.lab?.exit?.(); } catch (e) { console.error(e); }
+  state.lab = null; state.labId = null;
+  globe.hideAll(); globe.setOutline(null); globe.setMarker(null); globe.setDataCanvas(null); hideTip();
+  if (globe.bodyKind) globe.setBody(null); // a Moon / Mars lab hands the Earth back
+  document.querySelectorAll("div[data-lab-veil]").forEach((v) => (v.style.opacity = "0"));
+  try { const u = new URL(location.href); for (const k of [...u.searchParams.keys()]) u.searchParams.delete(k); history.replaceState(null, "", u); } catch {}
 }
 
 // ---------------------------------------------------------------- FIRE CALENDAR (area of interest)

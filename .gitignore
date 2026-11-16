@@ -2,12 +2,11 @@
 /backup
 /deploy
 /docs
-# dependencies and build output
+/pipeline
 node_modules/
 site/dist/
 __pycache__/
 *.pyc
 
-# notes and docs stay local (README.md is kept)
 *.md
 !README.md

@@ -1,0 +1,11 @@
+{
+ "run": "2026-11-15T00:00Z",
+ "rows": 181,
+ "cols": 360,
+ "lat0": 90,
+ "lon0": 0,
+ "res": 1,
+ "scale": 100,
+ "max_speed": 26.9,
+ "source": "NOAA GFS 1\u00b0 analysis, 10 m wind (NOMADS)"
+}

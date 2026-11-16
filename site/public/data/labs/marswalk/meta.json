@@ -1,0 +1,54 @@
+{
+ "dem": {
+  "w": 798,
+  "h": 756,
+  "res_m": 40,
+  "bbox": [
+   77.16046545922367,
+   18.211027390963398,
+   77.69897516629472,
+   18.721194481872804
+  ],
+  "nodata": -32768
+ },
+ "ctx": {
+  "bbox": [
+   77.16046545922367,
+   18.211027390963398,
+   77.69897516629472,
+   18.721194481872804
+  ],
+  "size": [
+   1569,
+   1486
+  ],
+  "src": "MRO CTX orthomosaic (JEZ_ctx_B_soc_008), NASA Mars Trek"
+ },
+ "hirise": {
+  "bbox": [
+   77.36,
+   18.39,
+   77.48,
+   18.51
+  ],
+  "size": [
+   1400,
+   1400
+  ],
+  "src": "MRO HiRISE orthomosaic (JEZ_hirise_soc_006), NASA Mars Trek"
+ },
+ "themis": {
+  "bbox": [
+   77.16046545922367,
+   18.211027390963398,
+   77.69897516629472,
+   18.721194481872804
+  ],
+  "size": [
+   392,
+   371
+  ],
+  "src": "Mars Odyssey THEMIS night IR 100 m, NASA Mars Trek"
+ },
+ "dem_src": "CTX DTM tied to MGS MOLA (JEZ_ctx_B_soc_008), USGS Astrogeology / Mars 2020 TRN"
+}

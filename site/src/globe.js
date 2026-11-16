@@ -60,21 +60,24 @@ const atmoVert = /* glsl */ `
 // Fire / risk points. aV in 0..1 drives colour + size; ramp chosen per layer.
 const pointVert = /* glsl */ `
   attribute float aV;
-  uniform float uScale; uniform float uSize; uniform float uMin;
-  varying float vV; varying float vFacing;
+  uniform float uScale; uniform float uSize; uniform float uMin; uniform float uTime; uniform float uTw;
+  varying float vV; varying float vFacing; varying float vPulse;
   void main() {
     vV = aV;
+    // optional twinkle (labs): each point pulses with its own phase; uTw = 0 keeps the classic look
+    float ph = fract(sin(dot(position, vec3(12.9898, 78.233, 37.719))) * 43758.5453) * 6.2831;
+    vPulse = 0.5 + 0.5 * sin(uTime * (1.6 + 1.4 * fract(ph * 3.7)) + ph);
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
     vec3 n = normalize(normalMatrix * position);
     vFacing = dot(n, normalize(-mv.xyz));
-    float s = uSize * (uMin + (1.0 - uMin) * sqrt(aV));
+    float s = uSize * (uMin + (1.0 - uMin) * sqrt(aV)) * (1.0 + uTw * 0.5 * (vPulse - 0.5));
     gl_PointSize = max(1.5, s * uScale / -mv.z);
     gl_Position = projectionMatrix * mv;
   }`;
 const pointFrag = /* glsl */ `
   uniform vec3 uC0; uniform vec3 uC1; uniform vec3 uC2; uniform vec3 uC3;
-  uniform float uOpacity; uniform float uSoft;
-  varying float vV; varying float vFacing;
+  uniform float uOpacity; uniform float uSoft; uniform float uTw;
+  varying float vV; varying float vFacing; varying float vPulse;
   vec3 ramp(float t) {
     if (t < 0.33) return mix(uC0, uC1, t / 0.33);
     if (t < 0.66) return mix(uC1, uC2, (t - 0.33) / 0.33);
@@ -87,7 +90,7 @@ const pointFrag = /* glsl */ `
     if (d > 1.0) discard;
     float core = 1.0 - smoothstep(uSoft, 1.0, d);
     float edge = smoothstep(0.02, 0.25, vFacing);
-    gl_FragColor = vec4(ramp(vV), core * uOpacity * edge * (0.35 + 0.65 * vV));
+    gl_FragColor = vec4(ramp(vV) * (1.0 + uTw * 0.35 * (vPulse - 0.5)), core * uOpacity * edge * (0.35 + 0.65 * vV) * (1.0 - uTw * 0.6 * (1.0 - vPulse)));
   }`;
 
 export const RAMPS = {
@@ -99,6 +102,8 @@ export const RAMPS = {
   // hidden non-fire heat in "Fires only" view: one hue per kind, kept away from fire oranges
   volcano: ["#8b3fd9", "#a95ff0", "#c084fc", "#ddb8ff"],
   flare: ["#0e8fb0", "#1bb3d6", "#38d1f0", "#a5ecfa"],
+  // Labs · trend map: falling (blue) .. rising (orange-red), 0.5 = no change
+  trend: ["#2f6fd0", "#a9c8f0", "#f6b07a", "#e8402a"],
 };
 
 export class Globe {
@@ -137,7 +142,7 @@ export class Globe {
     );
     this.scene.add(this.earth);
 
-    const atmo = new THREE.Mesh(
+    const atmo = this.atmo = new THREE.Mesh(
       new THREE.SphereGeometry(1.14, 96, 96),
       new THREE.ShaderMaterial({ vertexShader: atmoVert, fragmentShader: atmoFrag, side: THREE.BackSide, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false })
     );
@@ -188,7 +193,7 @@ export class Globe {
    * Replace a point layer.
    * lats/lons/values are typed arrays (values already normalised 0..1).
    */
-  setPoints(name, { lats, lons, values, ramp = "heat", size = 0.012, minSize = 0.35, opacity = 0.9, soft = 0.15, blending = THREE.AdditiveBlending, radius = 1.004 }) {
+  setPoints(name, { lats, lons, values, ramp = "heat", size = 0.012, minSize = 0.35, opacity = 0.9, soft = 0.15, blending = THREE.AdditiveBlending, radius = 1.004, twinkle = 0 }) {
     const n = values.length;
     const pos = new Float32Array(n * 3);
     const v = new THREE.Vector3();
@@ -200,7 +205,7 @@ export class Globe {
     if (!layer) {
       const mat = new THREE.ShaderMaterial({
         uniforms: {
-          uScale: { value: 1 }, uSize: { value: size }, uMin: { value: minSize }, uOpacity: { value: opacity }, uSoft: { value: soft },
+          uScale: { value: 1 }, uSize: { value: size }, uMin: { value: minSize }, uOpacity: { value: opacity }, uSoft: { value: soft }, uTime: { value: 0 }, uTw: { value: 0 },
           uC0: { value: new THREE.Color() }, uC1: { value: new THREE.Color() }, uC2: { value: new THREE.Color() }, uC3: { value: new THREE.Color() },
         },
         vertexShader: pointVert, fragmentShader: pointFrag, transparent: true, depthWrite: false, blending,
@@ -211,7 +216,7 @@ export class Globe {
       this.scene.add(layer);
     }
     const u = layer.material.uniforms;
-    u.uSize.value = size; u.uMin.value = minSize; u.uOpacity.value = opacity; u.uSoft.value = soft;
+    u.uSize.value = size; u.uMin.value = minSize; u.uOpacity.value = opacity; u.uSoft.value = soft; u.uTw.value = twinkle;
     layer.material.blending = blending;
     RAMPS[ramp].forEach((hex, i) => u["uC" + i].value.set(hex));
     layer.geometry.dispose();
@@ -224,7 +229,55 @@ export class Globe {
   }
 
   hideLayer(name) { if (this.layers[name]) this.layers[name].visible = false; }
-  hideAll() { Object.values(this.layers).forEach((l) => (l.visible = false)); }
+  hideAll() { Object.values(this.layers).forEach((l) => (l.visible = false)); if (this.dataMesh) this.dataMesh.visible = false; }
+
+  /**
+   * Labs: swap the Earth for another body at the same place and size, so picking, dots, outlines and flyTo
+   * all keep working ('moon' | 'mars' with an equirectangular texture url), or back to Earth (null).
+   */
+  setBody(kind, url, { tint = [1, 1, 1], rim = [0, 0, 0] } = {}) {
+    const earthParts = [this.earth, this.atmo, this.borders].filter(Boolean);
+    this.bodies ??= {};
+    Object.values(this.bodies).forEach((b) => (b.visible = false));
+    if (!kind) { earthParts.forEach((o) => (o.visible = true)); this.bodyKind = null; return; }
+    let b = this.bodies[kind];
+    if (!b) {
+      const tex = new THREE.TextureLoader().load(url);
+      tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+      b = new THREE.Mesh(new THREE.SphereGeometry(1, 160, 160), new THREE.ShaderMaterial({
+        uniforms: { uMap: { value: tex }, uTint: { value: new THREE.Color(...tint) }, uRim: { value: new THREE.Color(...rim) } },
+        vertexShader: earthVert,
+        fragmentShader: `uniform sampler2D uMap; uniform vec3 uTint; uniform vec3 uRim; varying vec2 vUv; varying vec3 vNormal; varying vec3 vView;
+          void main() {
+            vec3 c = texture2D(uMap, vUv).rgb * uTint;
+            float light = 0.55 + 0.6 * max(dot(vNormal, normalize(vec3(-0.4, 0.5, 1.0))), 0.0);
+            float rim = pow(1.0 - max(dot(vNormal, vView), 0.0), 3.0);
+            gl_FragColor = vec4(c * light + uRim * rim * 0.6, 1.0);
+          }`,
+      }));
+      this.scene.add(b);
+      this.bodies[kind] = b;
+    }
+    b.visible = true;
+    earthParts.forEach((o) => (o.visible = false));
+    this.bodyKind = kind;
+  }
+
+  /** Labs: an equirectangular canvas (x = lon −180..180, y = lat 90..−90) draped smoothly over the globe; null hides it. */
+  setDataCanvas(canvas, opacity = 1) {
+    if (!canvas) { if (this.dataMesh) this.dataMesh.visible = false; return; }
+    if (!this.dataMesh) {
+      this.dataTex = new THREE.CanvasTexture(canvas);
+      this.dataTex.colorSpace = THREE.SRGBColorSpace;
+      this.dataTex.anisotropy = 4;
+      const mat = new THREE.MeshBasicMaterial({ map: this.dataTex, transparent: true, depthWrite: false, opacity });
+      this.dataMesh = new THREE.Mesh(new THREE.SphereGeometry(1.0022, 160, 80), mat);
+      this.scene.add(this.dataMesh);
+    } else if (this.dataTex.image !== canvas) this.dataTex.image = canvas;
+    this.dataTex.needsUpdate = true;
+    this.dataMesh.material.opacity = opacity;
+    this.dataMesh.visible = true;
+  }
 
   /** Drape a global equirectangular image (e.g. today's smoke from NASA GIBS) over the globe; null removes it. */
   // mode 0: keep reds/oranges (smoke index: yellow = little, red = thick); mode 1: keep warm vs blue (CO: blue = low)
@@ -386,6 +439,8 @@ export class Globe {
     this.controls.rotateSpeed = 0.15 + 0.12 * (dist - 1);
     if (this.borders) this.borders.material.opacity = 0.12 + 0.18 * Math.max(0, (3 - dist) / 1.8);
     if (this.marker.visible) this.marker.scale.setScalar(Math.max(dist - 1, 0.02) * 0.0045); // same size on screen at any zoom
+    const t = now / 1000;
+    for (const l of Object.values(this.layers)) if (l.visible && l.material.uniforms.uTw.value > 0) l.material.uniforms.uTime.value = t;
     this.renderer.render(this.scene, this.camera);
     requestAnimationFrame(this._loop);
   }
